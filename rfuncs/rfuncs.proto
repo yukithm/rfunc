@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package rfuncs;
+
+service RFuncs {
+  rpc Copy (CopyRequest) returns (CopyReply) {}
+  rpc Paste (PasteRequest) returns (PasteReply) {}
+  rpc OpenURL (OpenURLRequest) returns (OpenURLReply) {}
+}
+
+enum ImageFormat {
+  UNKNOWN = 0;
+}
+
+message Image {
+  ImageFormat format = 1;
+  bytes data = 2;
+}
+
+enum ClipboardType {
+  EMPTY = 0;
+  TEXT = 1;
+  RTF = 2;
+  IMAGE = 3;
+  BINARY = 9;
+}
+
+message ClipboardContent {
+  ClipboardType type = 1;
+  oneof content {
+    string text = 2;
+    Image image = 3;
+    bytes binary = 4;
+  }
+}
+
+message CopyRequest {
+  ClipboardContent clip_content = 1;
+}
+
+message CopyReply {
+}
+
+message PasteRequest {
+  repeated ClipboardType accepts = 1;
+}
+
+message PasteReply {
+  ClipboardContent clip_content = 1;
+}
+
+message OpenURLRequest {
+  repeated string url = 1;
+}
+
+message OpenURLReply {
+}

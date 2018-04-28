@@ -3,6 +3,7 @@
 package server
 
 import (
+	"bytes"
 	"errors"
 	"os/exec"
 	"runtime"
@@ -32,17 +33,27 @@ type ClipCmd struct {
 	args []string
 }
 
+func (c *ClipCmd) Run(input []byte) ([]byte, error) {
+	cmd := exec.Command(c.path, c.args...)
+	if input != nil && len(input) > 0 {
+		cmd.Stdin = bytes.NewReader(input)
+	}
+	return cmd.Output()
+}
+
 type CmdClipboard struct {
 	copyCmd  ClipCmd
 	pasteCmd ClipCmd
 }
 
 func (c *CmdClipboard) CopyText(text string) error {
-	return nil
+	_, err := c.copyCmd.Run([]byte(text))
+	return err
 }
 
 func (c *CmdClipboard) PasteText() (string, error) {
-	return "", nil
+	out, err := c.pasteCmd.Run(nil)
+	return string(out), err
 }
 
 func GetClipboard() (Clipboard, error) {

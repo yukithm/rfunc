@@ -78,7 +78,19 @@ func (f *RFunc) Copy(ctx context.Context, req *pb.CopyRequest) (*pb.CopyReply, e
 
 func (f *RFunc) Paste(ctx context.Context, req *pb.PasteRequest) (*pb.PasteReply, error) {
 	f.Log().Println("[gRPC] Paste")
-	return nil, status.Error(codes.Unimplemented, "Unimplemented")
+
+	if !req.Acceptable(pb.ClipboardType_TEXT) {
+		return nil, status.Error(codes.Unavailable, "Unsupported content type")
+	}
+
+	content, err := f.clipboard.PasteText()
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.PasteReply{
+		ClipContent: pb.MakeTextClipboardContent(content),
+	}, nil
 }
 
 func (f *RFunc) OpenURL(ctx context.Context, req *pb.OpenURLRequest) (*pb.OpenURLReply, error) {

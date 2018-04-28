@@ -8,3 +8,18 @@ func MakeTextClipboardContent(text string) *ClipboardContent {
 		},
 	}
 }
+
+func (m *PasteRequest) Acceptable(t ClipboardType) bool {
+	accepts := m.GetAccepts()
+	if accepts == nil || len(accepts) == 0 {
+		return false
+	}
+
+	for _, accept := range accepts {
+		if accept == t {
+			return true
+		}
+	}
+
+	return false
+}

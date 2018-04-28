@@ -39,7 +39,7 @@ func (o *GlobalOptions) NetAddr() (net.Addr, error) {
 }
 
 var globalOpts = GlobalOptions{
-	Addr: "127.0.0.1:3299",
+	Addr: "127.0.0.1:8299",
 }
 
 var logger *log.Logger

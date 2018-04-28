@@ -1,6 +1,7 @@
 package server
 
 import (
+	"log"
 	"net"
 	"os"
 	"os/signal"
@@ -9,6 +10,7 @@ import (
 
 type Server struct {
 	Clipboard Clipboard
+	Logger    *log.Logger
 	rfunc     *RFunc
 }
 
@@ -22,6 +24,7 @@ func (s *Server) Serve(lis net.Listener) error {
 	}
 
 	s.rfunc = NewRFunc(lis, s.Clipboard)
+	s.rfunc.Logger = s.Logger
 
 	quit := make(chan struct{})
 	defer close(quit)

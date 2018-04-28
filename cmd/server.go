@@ -22,6 +22,8 @@ func runServerCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	logger.Println("Server started at", lis.Addr())
-	s := &server.Server{}
+	s := &server.Server{
+		Logger: logger,
+	}
 	return s.Serve(lis)
 }

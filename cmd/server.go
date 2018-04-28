@@ -20,6 +20,7 @@ func runServerCmd(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	defer lis.Close()
 
 	logger.Println("Server started at", lis.Addr())
 	s := &server.Server{

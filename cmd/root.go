@@ -4,6 +4,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -30,6 +31,13 @@ func (o *GlobalOptions) Address() string {
 	return o.Addr
 }
 
+func (o *GlobalOptions) NetAddr() (net.Addr, error) {
+	if o.Sock != "" {
+		return net.ResolveUnixAddr("unix", o.Sock)
+	}
+	return net.ResolveTCPAddr("tcp", o.Addr)
+}
+
 var globalOpts = GlobalOptions{
 	Addr: "127.0.0.1:3299",
 }
@@ -38,8 +46,10 @@ var logger *log.Logger
 var logfile io.WriteCloser
 
 var rootCmd = &cobra.Command{
-	Use:   "rfunc",
-	Short: "rfunc is a utility functions over the network",
+	Use:           "rfunc",
+	Short:         "rfunc is a utility functions over the network",
+	SilenceErrors: true,
+	SilenceUsage:  true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) (err error) {
 		lf := cmd.Flag("logfile")
 		logger, err = newLogger(globalOpts.Logfile, lf.Changed)
@@ -56,7 +66,9 @@ func init() {
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		// fmt.Println(err)
+		if logger != nil {
+			logger.Print(err)
+		}
 		os.Exit(1)
 	}
 }

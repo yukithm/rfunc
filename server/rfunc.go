@@ -2,6 +2,8 @@ package server
 
 import (
 	"context"
+	"io/ioutil"
+	"log"
 	"net"
 
 	pb "github.com/yukithm/rfunc/rfuncs"
@@ -12,6 +14,7 @@ import (
 )
 
 type RFunc struct {
+	Logger     *log.Logger
 	listener   net.Listener
 	grpcServer *grpc.Server
 }
@@ -27,6 +30,13 @@ func NewRFunc(lis net.Listener) *RFunc {
 	s.grpcServer = gs
 
 	return s
+}
+
+func (f *RFunc) Log() *log.Logger {
+	if f.Logger == nil {
+		f.Logger = log.New(ioutil.Discard, "", 0)
+	}
+	return f.Logger
 }
 
 func (f *RFunc) Start() error {
@@ -48,7 +58,11 @@ func (f *RFunc) GracefulStop() {
 }
 
 func (f *RFunc) Copy(ctx context.Context, req *pb.CopyRequest) (*pb.CopyReply, error) {
-	if req.GetClipContent().GetType() != pb.ClipboardType_TEXT {
+	f.Log().Println("[gRPC] Copy")
+
+	contentType := req.GetClipContent().GetType()
+	if contentType != pb.ClipboardType_TEXT {
+		f.Log().Println("[gRPC] Copy: Unsupported content type: ", contentType)
 		return nil, status.Error(codes.Unavailable, "Unsupported content type")
 	}
 
@@ -56,9 +70,11 @@ func (f *RFunc) Copy(ctx context.Context, req *pb.CopyRequest) (*pb.CopyReply, e
 }
 
 func (f *RFunc) Paste(ctx context.Context, req *pb.PasteRequest) (*pb.PasteReply, error) {
+	f.Log().Println("[gRPC] Paste")
 	return nil, status.Error(codes.Unimplemented, "Unimplemented")
 }
 
 func (f *RFunc) OpenURL(ctx context.Context, req *pb.OpenURLRequest) (*pb.OpenURLReply, error) {
+	f.Log().Println("[gRPC] OpenURL")
 	return nil, status.Error(codes.Unimplemented, "Unimplemented")
 }

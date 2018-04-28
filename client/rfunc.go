@@ -16,15 +16,22 @@ type RFunc struct {
 	rfuncs pb.RFuncsClient
 }
 
-func (f *RFunc) Connect(network, addr string) error {
-	if f.conn == nil {
-		conn, err := NewClientConn(network, addr)
-		if err != nil {
-			return err
-		}
-		f.conn = conn
+func RunRFunc(network, addr string, f func(*RFunc) error) error {
+	rfunc := &RFunc{}
+	if err := rfunc.Connect(network, addr); err != nil {
+		return err
 	}
+	defer rfunc.Close()
 
+	return f(rfunc)
+}
+
+func (f *RFunc) Connect(network, addr string) error {
+	conn, err := NewClientConn(network, addr)
+	if err != nil {
+		return err
+	}
+	f.conn = conn
 	f.rfuncs = pb.NewRFuncsClient(f.conn)
 
 	return nil

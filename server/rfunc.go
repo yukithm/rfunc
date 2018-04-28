@@ -71,6 +71,7 @@ func (f *RFunc) Copy(ctx context.Context, req *pb.CopyRequest) (*pb.CopyReply, e
 	case pb.ClipboardType_TEXT:
 		err := f.clipboard.CopyText(req.GetClipContent().GetText())
 		if err != nil {
+			f.Log().Println("[gRPC] Copy:", err)
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 		return &pb.CopyReply{}, nil
@@ -84,11 +85,13 @@ func (f *RFunc) Paste(ctx context.Context, req *pb.PasteRequest) (*pb.PasteReply
 	f.Log().Println("[gRPC] Paste")
 
 	if !req.Acceptable(pb.ClipboardType_TEXT) {
+		f.Log().Println("[gRPC] Paste: Unsupported content type")
 		return nil, status.Error(codes.Unavailable, "Unsupported content type")
 	}
 
 	content, err := f.clipboard.PasteText()
 	if err != nil {
+		f.Log().Println("[gRPC] Paste:", err)
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
@@ -103,10 +106,12 @@ func (f *RFunc) OpenURL(ctx context.Context, req *pb.OpenURLRequest) (*pb.OpenUR
 	urls := req.GetUrl()
 	for _, ref := range urls {
 		if err := validateURL(ref); err != nil {
+			f.Log().Println("[gRPC] OpenURL:", err)
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 	}
 	if err := f.shell.OpenURL(urls...); err != nil {
+		f.Log().Println("[gRPC] OpenURL:", err)
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 

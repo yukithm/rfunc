@@ -2,6 +2,12 @@
 
 
 [[projects]]
+  branch = "master"
+  name = "github.com/VividCortex/godaemon"
+  packages = ["."]
+  revision = "3d9f6e0b234fe7d17448b345b2e14ac05814a758"
+
+[[projects]]
   name = "github.com/golang/protobuf"
   packages = [
     "proto",
@@ -109,6 +115,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "c5b6f3cbbd6d30338d34ff611beebbd7ac9481876781deaf319ffee430014a5e"
+  inputs-digest = "4b425dd4dcc8eac575d6fbb5c3acbe2af0b855c7b6bda6d0ff0bc92d3c446744"
   solver-name = "gps-cdcl"
   solver-version = 1

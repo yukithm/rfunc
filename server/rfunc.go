@@ -17,11 +17,13 @@ type RFunc struct {
 	Logger     *log.Logger
 	listener   net.Listener
 	grpcServer *grpc.Server
+	clipboard  Clipboard
 }
 
-func NewRFunc(lis net.Listener) *RFunc {
+func NewRFunc(lis net.Listener, clipboard Clipboard) *RFunc {
 	s := &RFunc{
-		listener: lis,
+		listener:  lis,
+		clipboard: clipboard,
 	}
 
 	gs := grpc.NewServer()
@@ -61,12 +63,17 @@ func (f *RFunc) Copy(ctx context.Context, req *pb.CopyRequest) (*pb.CopyReply, e
 	f.Log().Println("[gRPC] Copy")
 
 	contentType := req.GetClipContent().GetType()
-	if contentType != pb.ClipboardType_TEXT {
-		f.Log().Println("[gRPC] Copy: Unsupported content type: ", contentType)
-		return nil, status.Error(codes.Unavailable, "Unsupported content type")
+	switch contentType {
+	case pb.ClipboardType_TEXT:
+		err := f.clipboard.CopyText(req.GetClipContent().GetText())
+		if err != nil {
+			return nil, err
+		}
+		return &pb.CopyReply{}, nil
 	}
 
-	return nil, status.Error(codes.Unimplemented, "Unimplemented")
+	f.Log().Println("[gRPC] Copy: Unsupported content type: ", contentType)
+	return nil, status.Error(codes.Unavailable, "Unsupported content type")
 }
 
 func (f *RFunc) Paste(ctx context.Context, req *pb.PasteRequest) (*pb.PasteReply, error) {

@@ -8,11 +8,20 @@ import (
 )
 
 type Server struct {
-	rfunc *RFunc
+	Clipboard Clipboard
+	rfunc     *RFunc
 }
 
 func (s *Server) Serve(lis net.Listener) error {
-	s.rfunc = NewRFunc(lis)
+	if s.Clipboard == nil {
+		clip, err := GetClipboard()
+		if err != nil {
+			return err
+		}
+		s.Clipboard = clip
+	}
+
+	s.rfunc = NewRFunc(lis, s.Clipboard)
 
 	quit := make(chan struct{})
 	defer close(quit)

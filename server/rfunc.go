@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"io/ioutil"
 	"log"
 	"net"
@@ -101,11 +102,8 @@ func (f *RFunc) OpenURL(ctx context.Context, req *pb.OpenURLRequest) (*pb.OpenUR
 
 	urls := req.GetUrl()
 	for _, ref := range urls {
-		u, err := url.Parse(ref)
-		if err != nil {
+		if err := validateURL(ref); err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
-		} else if !u.IsAbs() {
-			return nil, status.Error(codes.InvalidArgument, "not a full URL")
 		}
 	}
 	if err := f.shell.OpenURL(urls...); err != nil {
@@ -113,4 +111,22 @@ func (f *RFunc) OpenURL(ctx context.Context, req *pb.OpenURLRequest) (*pb.OpenUR
 	}
 
 	return &pb.OpenURLReply{}, nil
+}
+
+func validateURL(ref string) error {
+	u, err := url.Parse(ref)
+	if err != nil {
+		return err
+	}
+
+	if !u.IsAbs() {
+		return errors.New("only full URL is allowed")
+	}
+
+	// restrict to HTTP only for security reason
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return errors.New("only http and https schemes are allowed")
+	}
+
+	return nil
 }

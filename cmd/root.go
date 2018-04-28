@@ -14,7 +14,6 @@ type GlobalOptions struct {
 	Addr    string
 	Sock    string
 	Logfile string
-	NoLog   bool
 }
 
 func (o *GlobalOptions) Network() string {

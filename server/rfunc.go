@@ -70,7 +70,7 @@ func (f *RFunc) Copy(ctx context.Context, req *pb.CopyRequest) (*pb.CopyReply, e
 	case pb.ClipboardType_TEXT:
 		err := f.clipboard.CopyText(req.GetClipContent().GetText())
 		if err != nil {
-			return nil, err
+			return nil, status.Error(codes.Internal, err.Error())
 		}
 		return &pb.CopyReply{}, nil
 	}
@@ -88,7 +88,7 @@ func (f *RFunc) Paste(ctx context.Context, req *pb.PasteRequest) (*pb.PasteReply
 
 	content, err := f.clipboard.PasteText()
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &pb.PasteReply{
@@ -101,12 +101,15 @@ func (f *RFunc) OpenURL(ctx context.Context, req *pb.OpenURLRequest) (*pb.OpenUR
 
 	urls := req.GetUrl()
 	for _, ref := range urls {
-		if _, err := url.Parse(ref); err != nil {
-			return nil, err
+		u, err := url.Parse(ref)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		} else if !u.IsAbs() {
+			return nil, status.Error(codes.InvalidArgument, "not a full URL")
 		}
 	}
 	if err := f.shell.OpenURL(urls...); err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &pb.OpenURLReply{}, nil

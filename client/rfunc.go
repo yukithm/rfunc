@@ -11,51 +11,51 @@ import (
 
 const RPCTimeout = time.Second * 5
 
-type Client struct {
+type RFunc struct {
 	conn   *grpc.ClientConn
 	rfuncs pb.RFuncsClient
 }
 
-func (c *Client) Connect(network, addr string) error {
-	if c.conn == nil {
+func (f *RFunc) Connect(network, addr string) error {
+	if f.conn == nil {
 		conn, err := NewClientConn(network, addr)
 		if err != nil {
 			return err
 		}
-		c.conn = conn
+		f.conn = conn
 	}
 
-	c.rfuncs = pb.NewRFuncsClient(c.conn)
+	f.rfuncs = pb.NewRFuncsClient(f.conn)
 
 	return nil
 }
 
-func (c *Client) Close() error {
-	conn := c.conn
+func (f *RFunc) Close() error {
+	conn := f.conn
 	if conn != nil {
 		if err := conn.Close(); err != nil {
 			return err
 		}
-		c.conn = nil
+		f.conn = nil
 	}
 	return nil
 }
 
-func (c *Client) Copy(text string) error {
+func (f *RFunc) Copy(text string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), RPCTimeout)
 	defer cancel()
 
-	_, err := c.rfuncs.Copy(ctx, &pb.CopyRequest{
+	_, err := f.rfuncs.Copy(ctx, &pb.CopyRequest{
 		ClipContent: pb.MakeTextClipboardContent(text),
 	})
 	return err
 }
 
-func (c *Client) Paste() (string, error) {
+func (f *RFunc) Paste() (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), RPCTimeout)
 	defer cancel()
 
-	res, err := c.rfuncs.Paste(ctx, &pb.PasteRequest{
+	res, err := f.rfuncs.Paste(ctx, &pb.PasteRequest{
 		Accepts: []pb.ClipboardType{
 			pb.ClipboardType_TEXT,
 		},
@@ -73,11 +73,11 @@ func (c *Client) Paste() (string, error) {
 	return "", fmt.Errorf("Unsupported content: %s", content.GetType())
 }
 
-func (c *Client) OpenURL(url ...string) error {
+func (f *RFunc) OpenURL(url ...string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), RPCTimeout)
 	defer cancel()
 
-	_, err := c.rfuncs.OpenURL(ctx, &pb.OpenURLRequest{
+	_, err := f.rfuncs.OpenURL(ctx, &pb.OpenURLRequest{
 		Url: url,
 	})
 	return err

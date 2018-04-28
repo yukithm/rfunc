@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
+	"net/url"
 
 	pb "github.com/yukithm/rfunc/rfuncs"
 	"google.golang.org/grpc"
@@ -18,12 +19,14 @@ type RFunc struct {
 	listener   net.Listener
 	grpcServer *grpc.Server
 	clipboard  Clipboard
+	shell      Shell
 }
 
-func NewRFunc(lis net.Listener, clipboard Clipboard) *RFunc {
+func NewRFunc(lis net.Listener, clipboard Clipboard, shell Shell) *RFunc {
 	s := &RFunc{
 		listener:  lis,
 		clipboard: clipboard,
+		shell:     shell,
 	}
 
 	gs := grpc.NewServer()
@@ -95,5 +98,16 @@ func (f *RFunc) Paste(ctx context.Context, req *pb.PasteRequest) (*pb.PasteReply
 
 func (f *RFunc) OpenURL(ctx context.Context, req *pb.OpenURLRequest) (*pb.OpenURLReply, error) {
 	f.Log().Println("[gRPC] OpenURL")
-	return nil, status.Error(codes.Unimplemented, "Unimplemented")
+
+	urls := req.GetUrl()
+	for _, ref := range urls {
+		if _, err := url.Parse(ref); err != nil {
+			return nil, err
+		}
+	}
+	if err := f.shell.OpenURL(urls...); err != nil {
+		return nil, err
+	}
+
+	return &pb.OpenURLReply{}, nil
 }

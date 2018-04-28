@@ -10,6 +10,7 @@ import (
 
 type Server struct {
 	Clipboard Clipboard
+	Shell     Shell
 	Logger    *log.Logger
 	rfunc     *RFunc
 }
@@ -23,7 +24,15 @@ func (s *Server) Serve(lis net.Listener) error {
 		s.Clipboard = clip
 	}
 
-	s.rfunc = NewRFunc(lis, s.Clipboard)
+	if s.Shell == nil {
+		shell, err := GetShell()
+		if err != nil {
+			return err
+		}
+		s.Shell = shell
+	}
+
+	s.rfunc = NewRFunc(lis, s.Clipboard, s.Shell)
 	s.rfunc.Logger = s.Logger
 
 	quit := make(chan struct{})

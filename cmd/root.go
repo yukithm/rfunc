@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 )
@@ -14,6 +15,20 @@ type GlobalOptions struct {
 	Addr    string
 	Sock    string
 	Logfile string
+}
+
+func (o *GlobalOptions) AbsPaths() {
+	if o.Logfile != "" && o.Logfile != "-" {
+		o.Logfile = o.abs(o.Logfile)
+	}
+	o.Sock = o.abs(o.Sock)
+}
+
+func (o *GlobalOptions) abs(path string) string {
+	if ap, err := filepath.Abs(path); err == nil {
+		return ap
+	}
+	return path
 }
 
 func (o *GlobalOptions) Network() string {
@@ -50,6 +65,7 @@ var rootCmd = &cobra.Command{
 	SilenceErrors: true,
 	SilenceUsage:  true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) (err error) {
+		globalOpts.AbsPaths()
 		lf := cmd.Flag("logfile")
 		logger, err = newLogger(globalOpts.Logfile, lf.Changed)
 		return

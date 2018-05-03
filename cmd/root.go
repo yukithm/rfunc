@@ -9,31 +9,39 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var globalOpts = GlobalOptions{
-	Addr: "127.0.0.1:8299",
+var defaultConfigFiles = []string{
+	"~/.config/rfunc/rfunc.json",
+	"~/.rfunc.json",
 }
+var configfile string
+var configOpts *GlobalOptions
+
+var flagOpts = &FlagOptions{
+	GlobalOptions: &GlobalOptions{
+		Addr: "127.0.0.1:8299",
+	},
+}
+
+var globalOpts *GlobalOptions
 
 var logger *log.Logger
 var logfile io.WriteCloser
 
 var rootCmd = &cobra.Command{
-	Use:           "rfunc",
-	Short:         "rfunc is a utility functions over the network",
-	SilenceErrors: true,
-	SilenceUsage:  true,
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) (err error) {
-		globalOpts.AbsPaths()
-		lf := cmd.Flag("logfile")
-		logger, err = newLogger(globalOpts.Logfile, lf.Changed)
-		return
-	},
+	Use:               "rfunc",
+	Short:             "rfunc is a utility functions over the network",
+	SilenceErrors:     true,
+	SilenceUsage:      true,
+	PersistentPreRunE: initApp,
 }
 
 func init() {
 	pf := rootCmd.PersistentFlags()
-	pf.StringVar(&globalOpts.Addr, "addr", globalOpts.Addr, "address and port")
-	pf.StringVar(&globalOpts.Sock, "sock", globalOpts.Sock, "unix domain socket path")
-	pf.StringVar(&globalOpts.Logfile, "logfile", globalOpts.Logfile, "logfile")
+	pf.StringVar(&configfile, "conf", configfile, "configuration file")
+	pf.StringVar(&flagOpts.Addr, "addr", flagOpts.Addr, "address and port")
+	pf.StringVar(&flagOpts.Sock, "sock", flagOpts.Sock, "unix domain socket path")
+	pf.StringVar(&flagOpts.Logfile, "logfile", flagOpts.Logfile, "logfile")
+	flagOpts.Flags = pf
 }
 
 func Execute() {
@@ -43,6 +51,28 @@ func Execute() {
 		}
 		os.Exit(1)
 	}
+}
+
+func initApp(cmd *cobra.Command, args []string) (err error) {
+	var confErr error
+	if cmd.Flag("conf").Changed {
+		configOpts, confErr = loadConfig(configfile)
+	} else {
+		configOpts, confErr = loadDefaultConfig()
+	}
+
+	if confErr != nil {
+		configOpts = &GlobalOptions{}
+	}
+	globalOpts = MergeFlagOptions(configOpts, flagOpts)
+	globalOpts.AbsPaths()
+
+	logger, err = newLogger(globalOpts.Logfile, cmd.Flag("logfile").Changed)
+	if confErr != nil {
+		return confErr
+	}
+
+	return
 }
 
 func newLogger(logfile string, explicit bool) (*log.Logger, error) {
@@ -63,4 +93,36 @@ func newLogger(logfile string, explicit bool) (*log.Logger, error) {
 		}
 		return log.New(file, "", log.LstdFlags), nil
 	}
+}
+
+func loadConfig(conf string) (*GlobalOptions, error) {
+	if conf == "" {
+		return &GlobalOptions{}, nil
+	}
+
+	path, err := ExpandPath(conf)
+	if err != nil {
+		return nil, err
+	}
+	return LoadConfig(path)
+}
+
+func loadDefaultConfig() (*GlobalOptions, error) {
+	for _, file := range defaultConfigFiles {
+		path, err := ExpandPath(file)
+		if err != nil {
+			return nil, err
+		}
+
+		opts, err := LoadConfig(path)
+		if err == nil {
+			return opts, nil
+		}
+
+		if !os.IsNotExist(err) {
+			return nil, err
+		}
+	}
+
+	return &GlobalOptions{}, nil
 }

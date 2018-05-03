@@ -1,14 +1,38 @@
 package cmd
 
 import (
+	"encoding/json"
 	"net"
+	"os"
 	"path/filepath"
+
+	"github.com/spf13/pflag"
 )
 
 type GlobalOptions struct {
-	Addr    string
-	Sock    string
-	Logfile string
+	Addr    string `json:"addr"`
+	Sock    string `json:"sock"`
+	Logfile string `json:"logfile"`
+}
+
+func (o *GlobalOptions) Clone() *GlobalOptions {
+	newOpts := &GlobalOptions{}
+	*newOpts = *o
+	return newOpts
+}
+
+func (o *GlobalOptions) Merge(other *GlobalOptions) {
+	if other.Addr != "" {
+		o.Addr = other.Addr
+	}
+
+	if other.Sock != "" {
+		o.Sock = other.Sock
+	}
+
+	if other.Logfile != "" {
+		o.Logfile = other.Logfile
+	}
 }
 
 func (o *GlobalOptions) AbsPaths() {
@@ -19,6 +43,9 @@ func (o *GlobalOptions) AbsPaths() {
 }
 
 func (o *GlobalOptions) abs(path string) string {
+	if path == "" {
+		return ""
+	}
 	if ap, err := filepath.Abs(path); err == nil {
 		return ap
 	}
@@ -44,4 +71,41 @@ func (o *GlobalOptions) NetAddr() (net.Addr, error) {
 		return net.ResolveUnixAddr("unix", o.Sock)
 	}
 	return net.ResolveTCPAddr("tcp", o.Addr)
+}
+
+type FlagOptions struct {
+	*GlobalOptions
+	Flags *pflag.FlagSet
+}
+
+func MergeFlagOptions(opts *GlobalOptions, fopts *FlagOptions) *GlobalOptions {
+	o := opts.Clone()
+
+	if fopts.Flags.Changed("addr") || o.Addr == "" {
+		o.Addr = fopts.Addr
+	}
+	if fopts.Flags.Changed("sock") || o.Sock == "" {
+		o.Sock = fopts.Sock
+	}
+	if fopts.Flags.Changed("logfile") || o.Logfile == "" {
+		o.Logfile = fopts.Logfile
+	}
+
+	return o
+}
+
+func LoadConfig(file string) (*GlobalOptions, error) {
+	f, err := os.Open(file)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	var conf GlobalOptions
+	decoder := json.NewDecoder(f)
+	if err := decoder.Decode(&conf); err != nil {
+		return nil, err
+	}
+
+	return &conf, nil
 }

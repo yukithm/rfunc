@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -45,12 +47,40 @@ func init() {
 }
 
 func Execute() {
+	prognameSwitch()
 	if err := rootCmd.Execute(); err != nil {
 		if logger != nil {
 			logger.Print(err)
 		}
 		os.Exit(1)
 	}
+}
+
+func prognameSwitch() {
+	var cmd string
+	progname := strings.ToLower(filepath.Base(os.Args[0]))
+	if strings.Index(progname, "open") != -1 {
+		cmd = "open"
+	} else if strings.Index(progname, "copy") != -1 {
+		cmd = "copy"
+	} else if strings.Index(progname, "paste") != -1 {
+		cmd = "paste"
+	}
+
+	var args []string
+	if cmd == "" {
+		args = os.Args[1:]
+	} else {
+		args = []string{cmd}
+		if len(os.Args) > 1 {
+			args = append(args, os.Args[1:]...)
+		}
+	}
+
+	if cmd != "" {
+		rootCmd.Use = ""
+	}
+	rootCmd.SetArgs(args)
 }
 
 func initApp(cmd *cobra.Command, args []string) (err error) {

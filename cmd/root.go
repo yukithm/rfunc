@@ -44,11 +44,11 @@ func init() {
 	rootCmd.Flags().SortFlags = false
 	pf := rootCmd.PersistentFlags()
 	pf.SortFlags = false
-	pf.StringVar(&configfile, "conf", configfile, "configuration file")
-	pf.StringVar(&flagOpts.Addr, "addr", flagOpts.Addr, "address and port")
-	pf.StringVar(&flagOpts.Sock, "sock", flagOpts.Sock, "unix domain socket path")
-	pf.StringVar(&flagOpts.Logfile, "logfile", flagOpts.Logfile, "logfile")
-	pf.BoolVar(&flagOpts.Quiet, "quiet", flagOpts.Quiet, "suppress outputs (except paste content")
+	pf.StringVarP(&configfile, "conf", "c", configfile, "configuration file")
+	pf.StringVarP(&flagOpts.Addr, "addr", "a", flagOpts.Addr, "address and port")
+	pf.StringVarP(&flagOpts.Sock, "sock", "s", flagOpts.Sock, "unix domain socket path")
+	pf.StringVarP(&flagOpts.Logfile, "logfile", "l", flagOpts.Logfile, "logfile")
+	pf.BoolVarP(&flagOpts.Quiet, "quiet", "q", flagOpts.Quiet, "suppress outputs (except paste content")
 	flagOpts.Flags = pf
 
 	rootCmd.AddCommand(copyCmd)

@@ -86,9 +86,6 @@ func prognameSwitch() {
 		}
 	}
 
-	if cmd != "" {
-		rootCmd.Use = ""
-	}
 	rootCmd.SetArgs(args)
 }
 

@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var defaultConfigFiles = []string{
@@ -47,6 +48,7 @@ func init() {
 	pf.StringVar(&flagOpts.Addr, "addr", flagOpts.Addr, "address and port")
 	pf.StringVar(&flagOpts.Sock, "sock", flagOpts.Sock, "unix domain socket path")
 	pf.StringVar(&flagOpts.Logfile, "logfile", flagOpts.Logfile, "logfile")
+	pf.BoolVar(&flagOpts.Quiet, "quiet", flagOpts.Quiet, "suppress outputs (except paste content")
 	flagOpts.Flags = pf
 
 	rootCmd.AddCommand(copyCmd)
@@ -103,7 +105,7 @@ func initApp(cmd *cobra.Command, args []string) (err error) {
 	globalOpts = MergeFlagOptions(configOpts, flagOpts)
 	globalOpts.AbsPaths()
 
-	logger, err = newLogger(globalOpts.Logfile, cmd.Flag("logfile").Changed)
+	logger, err = newLogger(globalOpts, cmd.Flags())
 	if confErr != nil {
 		return confErr
 	}
@@ -111,10 +113,15 @@ func initApp(cmd *cobra.Command, args []string) (err error) {
 	return
 }
 
-func newLogger(logfile string, explicit bool) (*log.Logger, error) {
-	switch logfile {
+func newLogger(opts *GlobalOptions, flags *pflag.FlagSet) (*log.Logger, error) {
+	// Keep logging to the file even if specified quiet option
+	if opts.Quiet && (opts.Logfile == "" || opts.Logfile == "-") {
+		return log.New(ioutil.Discard, "", log.LstdFlags), nil
+	}
+
+	switch opts.Logfile {
 	case "":
-		if explicit {
+		if flags.Changed("logfile") {
 			return log.New(ioutil.Discard, "", log.LstdFlags), nil
 		}
 		return log.New(os.Stderr, "", log.LstdFlags), nil
@@ -123,7 +130,7 @@ func newLogger(logfile string, explicit bool) (*log.Logger, error) {
 		return log.New(os.Stdout, "", log.LstdFlags), nil
 
 	default:
-		file, err := os.OpenFile(logfile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600)
+		file, err := os.OpenFile(opts.Logfile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600)
 		if err != nil {
 			return nil, err
 		}

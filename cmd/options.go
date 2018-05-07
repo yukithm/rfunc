@@ -13,6 +13,7 @@ type GlobalOptions struct {
 	Addr    string `json:"addr"`
 	Sock    string `json:"sock"`
 	Logfile string `json:"logfile"`
+	Quiet   bool   `json:"quiet"`
 }
 
 func (o *GlobalOptions) Clone() *GlobalOptions {
@@ -33,6 +34,8 @@ func (o *GlobalOptions) Merge(other *GlobalOptions) {
 	if other.Logfile != "" {
 		o.Logfile = other.Logfile
 	}
+
+	o.Quiet = other.Quiet
 }
 
 func (o *GlobalOptions) AbsPaths() {
@@ -89,6 +92,9 @@ func MergeFlagOptions(opts *GlobalOptions, fopts *FlagOptions) *GlobalOptions {
 	}
 	if fopts.Flags.Changed("logfile") || o.Logfile == "" {
 		o.Logfile = fopts.Logfile
+	}
+	if fopts.Flags.Changed("quiet") || o.Quiet == false {
+		o.Quiet = fopts.Quiet
 	}
 
 	return o

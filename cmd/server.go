@@ -19,8 +19,6 @@ var serverOpts = struct {
 func init() {
 	f := serverCmd.Flags()
 	f.BoolVar(&serverOpts.Daemon, "daemon", serverOpts.Daemon, "daemonize")
-
-	rootCmd.AddCommand(serverCmd)
 }
 
 func runServerCmd(cmd *cobra.Command, args []string) error {

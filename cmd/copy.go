@@ -15,10 +15,6 @@ var copyCmd = &cobra.Command{
 	RunE:  runCopyCmd,
 }
 
-func init() {
-	rootCmd.AddCommand(copyCmd)
-}
-
 func runCopyCmd(cmd *cobra.Command, args []string) error {
 	return client.RunRFunc(globalOpts.Network(), globalOpts.Address(), func(rfunc *client.RFunc) error {
 		var buf bytes.Buffer

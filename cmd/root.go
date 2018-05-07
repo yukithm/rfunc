@@ -38,12 +38,21 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
+	cobra.EnableCommandSorting = false
+
+	rootCmd.Flags().SortFlags = false
 	pf := rootCmd.PersistentFlags()
+	pf.SortFlags = false
 	pf.StringVar(&configfile, "conf", configfile, "configuration file")
 	pf.StringVar(&flagOpts.Addr, "addr", flagOpts.Addr, "address and port")
 	pf.StringVar(&flagOpts.Sock, "sock", flagOpts.Sock, "unix domain socket path")
 	pf.StringVar(&flagOpts.Logfile, "logfile", flagOpts.Logfile, "logfile")
 	flagOpts.Flags = pf
+
+	rootCmd.AddCommand(copyCmd)
+	rootCmd.AddCommand(pasteCmd)
+	rootCmd.AddCommand(openCmd)
+	rootCmd.AddCommand(serverCmd)
 }
 
 func Execute() {

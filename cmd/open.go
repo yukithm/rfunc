@@ -11,10 +11,6 @@ var openCmd = &cobra.Command{
 	RunE:  runOpenCmd,
 }
 
-func init() {
-	rootCmd.AddCommand(openCmd)
-}
-
 func runOpenCmd(cmd *cobra.Command, args []string) error {
 	return client.RunRFunc(globalOpts.Network(), globalOpts.Address(), func(rfunc *client.RFunc) error {
 		return rfunc.OpenURL(args...)

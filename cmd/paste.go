@@ -13,10 +13,6 @@ var pasteCmd = &cobra.Command{
 	RunE:  runPasteCmd,
 }
 
-func init() {
-	rootCmd.AddCommand(pasteCmd)
-}
-
 func runPasteCmd(cmd *cobra.Command, args []string) error {
 	return client.RunRFunc(globalOpts.Network(), globalOpts.Address(), func(rfunc *client.RFunc) error {
 		text, err := rfunc.Paste()

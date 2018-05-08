@@ -4,7 +4,7 @@ rfunc is utility functions over the network. rfunc currently provides clipboard 
 
 ## Motivation
 
-I spend most of my work time in a remote shell with tmux and vim. Sometimes, I feel like copying texts from remote shell to local desktop clipboard and opening URLs on local desktop browser. But text selecting on the terminal client is a bit hard when I split tmux panes. Therefore I want to use clipboard commands such as pbcopy/pbpaste, xclip, xsel and open commands such as xdg-open across the network.
+I spend most of my work time in a remote shell with tmux and vim. Sometimes, I feel like copying texts from remote shell to local desktop clipboard and opening URLs by local desktop browser. But text selecting on the terminal client is a bit hard when I split tmux panes. Therefore I want to use clipboard commands such as pbcopy/pbpaste, xclip, xsel and open commands such as xdg-open across the network.
 
 ## Features
 

@@ -1,7 +1,14 @@
 package main
 
-import "github.com/yukithm/rfunc/cmd"
+import (
+	"os"
+
+	"github.com/yukithm/rfunc/cmd"
+)
 
 func main() {
-	cmd.Execute()
+	code := cmd.Execute()
+	if code != 0 {
+		os.Exit(code)
+	}
 }

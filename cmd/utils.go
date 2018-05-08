@@ -1,10 +1,23 @@
 package cmd
 
 import (
+	"io"
 	"os/user"
 	"path/filepath"
 	"strings"
 )
+
+type nopWriteCloser struct {
+	io.Writer
+}
+
+func (w *nopWriteCloser) Close() error {
+	return nil
+}
+
+func NopWriteCloser(w io.Writer) io.WriteCloser {
+	return &nopWriteCloser{w}
+}
 
 func ExpandPath(path string) (string, error) {
 	// ~user form is not supported because of user.Lookup() requires cgo.

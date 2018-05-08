@@ -1,24 +1,17 @@
-// +build linux darwin
-
-package server
+package shell
 
 import (
 	"errors"
 	"os/exec"
-	"runtime"
 )
 
-var DefaultShell = map[string][]CmdShell{
-	"darwin": {
-		{
-			openCmd: OpenCmd{path: "open"},
-		},
-	},
-	"linux": {
-		{
-			openCmd: OpenCmd{path: "xdg-open"},
-		},
-	},
+var (
+	ErrUnsupported = errors.New("shell functions are not supported")
+	ErrCmdNotFound = errors.New("No available commands")
+)
+
+type Shell interface {
+	OpenURL(url ...string) error
 }
 
 type OpenCmd struct {
@@ -41,14 +34,6 @@ func (c *CmdShell) OpenURL(url ...string) error {
 	return c.openCmd.Run(url)
 }
 
-func GetShell() (Shell, error) {
-	if defs, ok := DefaultShell[runtime.GOOS]; ok {
-		return findShell(defs)
-	}
-
-	return nil, errors.New("Unsupported OS")
-}
-
 func findShell(candidates []CmdShell) (*CmdShell, error) {
 	for _, candidate := range candidates {
 		var path string
@@ -63,5 +48,5 @@ func findShell(candidates []CmdShell) (*CmdShell, error) {
 		}, nil
 	}
 
-	return nil, errors.New("no available open commands")
+	return nil, ErrCmdNotFound
 }

@@ -1,11 +1,9 @@
 // +build windows
 
-package server
-
-import "errors"
+package clipboard
 
 // TODO: implements using Clipboard API
 
 func GetClipboard() (Clipboard, error) {
-	return nil, errors.New("Unsupported OS")
+	return nil, ErrUnsupported
 }

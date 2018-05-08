@@ -9,6 +9,8 @@ import (
 	"net/url"
 
 	pb "github.com/yukithm/rfunc/rfuncs"
+	"github.com/yukithm/rfunc/server/clipboard"
+	"github.com/yukithm/rfunc/server/shell"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/reflection"
@@ -19,11 +21,11 @@ type RFunc struct {
 	Logger     *log.Logger
 	listener   net.Listener
 	grpcServer *grpc.Server
-	clipboard  Clipboard
-	shell      Shell
+	clipboard  clipboard.Clipboard
+	shell      shell.Shell
 }
 
-func NewRFunc(lis net.Listener, clipboard Clipboard, shell Shell) *RFunc {
+func NewRFunc(lis net.Listener, clipboard clipboard.Clipboard, shell shell.Shell) *RFunc {
 	s := &RFunc{
 		listener:  lis,
 		clipboard: clipboard,

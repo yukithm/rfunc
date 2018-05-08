@@ -6,18 +6,21 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/yukithm/rfunc/server/clipboard"
+	"github.com/yukithm/rfunc/server/shell"
 )
 
 type Server struct {
-	Clipboard Clipboard
-	Shell     Shell
+	Clipboard clipboard.Clipboard
+	Shell     shell.Shell
 	Logger    *log.Logger
 	rfunc     *RFunc
 }
 
 func (s *Server) Serve(lis net.Listener) error {
 	if s.Clipboard == nil {
-		clip, err := GetClipboard()
+		clip, err := clipboard.GetClipboard()
 		if err != nil {
 			return err
 		}
@@ -25,7 +28,7 @@ func (s *Server) Serve(lis net.Listener) error {
 	}
 
 	if s.Shell == nil {
-		shell, err := GetShell()
+		shell, err := shell.GetShell()
 		if err != nil {
 			return err
 		}

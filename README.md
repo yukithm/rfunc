@@ -96,6 +96,11 @@ Each item is same as a command line option.
 }
 ```
 
+## Similar projects
+
+* https://github.com/wincent/clipper
+* https://github.com/pocke/lemonade
+
 ## Author
 
 Yuki (@yukithm)

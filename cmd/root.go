@@ -32,7 +32,7 @@ var logfile io.WriteCloser
 
 var rootCmd = &cobra.Command{
 	Use:               "rfunc",
-	Short:             "rfunc is a utility functions over the network",
+	Short:             "rfunc is utility functions over the network",
 	SilenceErrors:     true,
 	SilenceUsage:      true,
 	PersistentPreRunE: initApp,

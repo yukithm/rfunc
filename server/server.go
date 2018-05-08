@@ -48,7 +48,6 @@ func (s *Server) Serve(lis net.Listener) error {
 		err := s.rfunc.Start()
 		errCh <- err
 	}()
-	defer s.rfunc.GracefulStop()
 
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
@@ -58,17 +57,16 @@ func (s *Server) Serve(lis net.Listener) error {
 		}
 	}()
 
-	select {
-	case err, ok := <-errCh:
-		if ok {
+	for {
+		select {
+		case err := <-errCh:
 			return err
+
+		case <-quit:
+			s.rfunc.GracefulStop()
+			break
 		}
-
-	case <-quit:
-		break
 	}
-
-	return nil
 }
 
 func (s *Server) Stop() {

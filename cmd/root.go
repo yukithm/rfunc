@@ -28,13 +28,13 @@ var flagOpts = &FlagOptions{
 var globalOpts *GlobalOptions
 
 var logger *log.Logger
-var logfile io.WriteCloser
+var logdev io.WriteCloser
 
 var rootCmd = &cobra.Command{
 	Use:               "rfunc",
 	Short:             "rfunc is utility functions over the network",
 	Version:           Version,
-	SilenceErrors:     true,
+	SilenceErrors:     false,
 	SilenceUsage:      true,
 	PersistentPreRunE: initApp,
 }
@@ -58,14 +58,20 @@ func init() {
 	rootCmd.AddCommand(serverCmd)
 }
 
-func Execute() {
+func Execute() (code int) {
+	defer func() {
+		if logdev != nil {
+			logdev.Close()
+		}
+	}()
+
 	prognameSwitch()
 	if err := rootCmd.Execute(); err != nil {
-		if logger != nil {
-			logger.Print(err)
-		}
-		os.Exit(1)
+		// error message is printed by command library
+		return 1
 	}
+
+	return 0
 }
 
 func prognameSwitch() {
@@ -106,7 +112,10 @@ func initApp(cmd *cobra.Command, args []string) (err error) {
 	globalOpts = MergeFlagOptions(configOpts, flagOpts)
 	globalOpts.AbsPaths()
 
-	logger, err = newLogger(globalOpts, cmd.Flags())
+	logdev, err = newLogDevice(globalOpts, cmd.Flags())
+	logger = log.New(logdev, "", log.LstdFlags)
+	cmd.Root().SetOutput(logdev)
+
 	if confErr != nil {
 		return confErr
 	}
@@ -114,28 +123,28 @@ func initApp(cmd *cobra.Command, args []string) (err error) {
 	return
 }
 
-func newLogger(opts *GlobalOptions, flags *pflag.FlagSet) (*log.Logger, error) {
+func newLogDevice(opts *GlobalOptions, flags *pflag.FlagSet) (io.WriteCloser, error) {
 	// Keep logging to the file even if specified quiet option
 	if opts.Quiet && (opts.Logfile == "" || opts.Logfile == "-") {
-		return log.New(ioutil.Discard, "", log.LstdFlags), nil
+		return NopWriteCloser(ioutil.Discard), nil
 	}
 
 	switch opts.Logfile {
 	case "":
 		if flags.Changed("logfile") {
-			return log.New(ioutil.Discard, "", log.LstdFlags), nil
+			return NopWriteCloser(ioutil.Discard), nil
 		}
-		return log.New(os.Stderr, "", log.LstdFlags), nil
+		return NopWriteCloser(os.Stderr), nil
 
 	case "-":
-		return log.New(os.Stdout, "", log.LstdFlags), nil
+		return NopWriteCloser(os.Stdout), nil
 
 	default:
 		file, err := os.OpenFile(opts.Logfile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600)
 		if err != nil {
 			return nil, err
 		}
-		return log.New(file, "", log.LstdFlags), nil
+		return file, nil
 	}
 }
 

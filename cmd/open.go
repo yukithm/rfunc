@@ -7,7 +7,7 @@ import (
 
 var openCmd = &cobra.Command{
 	Use:   "open",
-	Short: "Open specified URL on the server",
+	Short: "Open specified URLs by the server's browser",
 	RunE:  runOpenCmd,
 }
 

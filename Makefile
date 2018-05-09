@@ -2,7 +2,7 @@ GOPATH := $(shell go env GOPATH)
 GO_FLAGS := -ldflags="-s -w"
 REPO := github.com/yukithm/rfunc
 
-.PHONY: proto mock test
+.PHONY: rfunc proto mock test
 
 rfunc: *.go */*.go
 	go build $(GO_FLAGS)

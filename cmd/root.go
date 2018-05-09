@@ -18,16 +18,15 @@ var defaultConfigFiles = []string{
 	"~/.rfunc.toml",
 }
 var configfile string
-var configOpts *GlobalOptions
 
 var flagOpts = &FlagOptions{
-	GlobalOptions: &GlobalOptions{
+	Options: &Options{
 		Addr: "127.0.0.1:8299",
 		EOL:  "NATIVE",
 	},
 }
 
-var globalOpts *GlobalOptions
+var globalOpts *Options
 
 var logger *log.Logger
 var logdev io.WriteCloser
@@ -53,7 +52,7 @@ func init() {
 	pf.StringVarP(&flagOpts.Logfile, "logfile", "l", flagOpts.Logfile, "logfile")
 	pf.BoolVarP(&flagOpts.Quiet, "quiet", "q", flagOpts.Quiet, "suppress outputs (except paste content")
 	pf.Var(&flagOpts.EOL, "eol", "line ending (LF|CRLF|NATIVE|PASS)")
-	flagOpts.Flags = pf
+	flagOpts.GlobalFlags = pf
 
 	rootCmd.AddCommand(copyCmd)
 	rootCmd.AddCommand(pasteCmd)
@@ -102,6 +101,7 @@ func prognameSwitch() {
 }
 
 func initApp(cmd *cobra.Command, args []string) (err error) {
+	var configOpts *Options
 	var confErr error
 	if cmd.Flag("conf").Changed {
 		configOpts, confErr = loadConfig(configfile)
@@ -110,7 +110,7 @@ func initApp(cmd *cobra.Command, args []string) (err error) {
 	}
 
 	if confErr != nil {
-		configOpts = &GlobalOptions{}
+		configOpts = &Options{}
 	}
 	globalOpts = MergeFlagOptions(configOpts, flagOpts)
 	globalOpts.AbsPaths()
@@ -126,7 +126,7 @@ func initApp(cmd *cobra.Command, args []string) (err error) {
 	return
 }
 
-func newLogDevice(opts *GlobalOptions, flags *pflag.FlagSet) (io.WriteCloser, error) {
+func newLogDevice(opts *Options, flags *pflag.FlagSet) (io.WriteCloser, error) {
 	// Keep logging to the file even if specified quiet option
 	if opts.Quiet && (opts.Logfile == "" || opts.Logfile == "-") {
 		return utils.NopWriteCloser(ioutil.Discard), nil
@@ -151,9 +151,9 @@ func newLogDevice(opts *GlobalOptions, flags *pflag.FlagSet) (io.WriteCloser, er
 	}
 }
 
-func loadConfig(conf string) (*GlobalOptions, error) {
+func loadConfig(conf string) (*Options, error) {
 	if conf == "" {
-		return &GlobalOptions{}, nil
+		return &Options{}, nil
 	}
 
 	path, err := utils.ExpandPath(conf)
@@ -163,7 +163,7 @@ func loadConfig(conf string) (*GlobalOptions, error) {
 	return LoadConfig(path)
 }
 
-func loadDefaultConfig() (*GlobalOptions, error) {
+func loadDefaultConfig() (*Options, error) {
 	for _, file := range defaultConfigFiles {
 		path, err := utils.ExpandPath(file)
 		if err != nil {
@@ -180,5 +180,5 @@ func loadDefaultConfig() (*GlobalOptions, error) {
 		}
 	}
 
-	return &GlobalOptions{}, nil
+	return &Options{}, nil
 }

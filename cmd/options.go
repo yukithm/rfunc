@@ -1,81 +1,20 @@
 package cmd
 
 import (
-	"fmt"
 	"net"
-	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 
-	"github.com/pelletier/go-toml"
-	"github.com/spf13/pflag"
 	"github.com/yukithm/rfunc/utils"
 )
-
-type LineEnding string
-
-const (
-	EOL_PASS   = LineEnding("")
-	EOL_LF     = LineEnding("\n")
-	EOL_CRLF   = LineEnding("\r\n")
-	EOL_NATIVE = LineEnding("NATIVE")
-)
-
-func (e *LineEnding) String() string {
-	switch *e {
-	case "PASS", EOL_PASS:
-		return "PASS"
-	case "LF", EOL_LF:
-		return "LF"
-	case "CRLF", EOL_CRLF:
-		return "CRLF"
-	case EOL_NATIVE:
-		return "NATIVE"
-	}
-	return string(*e)
-}
-
-func (e *LineEnding) Type() string {
-	return "string"
-}
-
-func (e *LineEnding) Set(value string) error {
-	switch strings.ToUpper(value) {
-	case "PASS", "":
-		*e = EOL_PASS
-	case "LF", "\n":
-		*e = EOL_LF
-	case "CRLF", "\r\n":
-		*e = EOL_CRLF
-	case "NATIVE":
-		*e = EOL_NATIVE
-	default:
-		return fmt.Errorf("Unsupported value '%s'", *e)
-	}
-
-	return nil
-}
-
-func (e *LineEnding) Code() string {
-	if *e != EOL_NATIVE {
-		return string(*e)
-	}
-
-	switch runtime.GOOS {
-	case "windows":
-		return string(EOL_CRLF)
-	default:
-		return string(EOL_LF)
-	}
-}
 
 type Options struct {
 	Addr    string        `toml:"addr"`
 	Sock    string        `toml:"sock"`
 	Logfile string        `toml:"logfile"`
 	Quiet   bool          `toml:"quiet"`
-	EOL     LineEnding    `toml:"eol"`
+	EOL     string        `toml:"eol"`
 	Server  ServerOptions `toml:"server"`
 }
 
@@ -86,21 +25,28 @@ func (o *Options) Clone() *Options {
 	return newOpts
 }
 
-func (o *Options) Merge(other *Options) {
-	if other.Addr != "" {
+func (o *Options) Fill(other *Options) {
+	if o.Addr == "" {
 		o.Addr = other.Addr
 	}
 
-	if other.Sock != "" {
+	if o.Sock == "" {
 		o.Sock = other.Sock
 	}
 
-	if other.Logfile != "" {
+	if o.Logfile == "" {
 		o.Logfile = other.Logfile
 	}
 
-	o.Quiet = other.Quiet
-	o.EOL = other.EOL
+	if o.Quiet == false {
+		o.Quiet = other.Quiet
+	}
+
+	if o.EOL == "" {
+		o.EOL = other.EOL
+	}
+
+	o.Server.Fill(&other.Server)
 }
 
 func (o *Options) AbsPaths() {
@@ -141,44 +87,33 @@ func (o *Options) NetAddr() (net.Addr, error) {
 	return net.ResolveTCPAddr("tcp", o.Addr)
 }
 
-type FlagOptions struct {
-	*Options
-	GlobalFlags *pflag.FlagSet
-	ServerFlags *pflag.FlagSet
-}
-
-func MergeFlagOptions(opts *Options, fopts *FlagOptions) *Options {
-	o := opts.Clone()
-
-	if fopts.GlobalFlags.Changed("addr") || o.Addr == "" {
-		o.Addr = fopts.Addr
-	}
-	if fopts.GlobalFlags.Changed("sock") || o.Sock == "" {
-		o.Sock = fopts.Sock
-	}
-	if fopts.GlobalFlags.Changed("logfile") || o.Logfile == "" {
-		o.Logfile = fopts.Logfile
-	}
-	if fopts.GlobalFlags.Changed("quiet") || o.Quiet == false {
-		o.Quiet = fopts.Quiet
-	}
-	if fopts.GlobalFlags.Changed("eol") || o.EOL == "" {
-		o.EOL = fopts.EOL
-	}
-
-	if fopts.ServerFlags.Changed("daemon") || o.Server.Daemon == false {
-		o.Server.Daemon = fopts.Server.Daemon
-	}
-	if fopts.ServerFlags.Changed("allow-commands") || o.Server.AllowCmds == nil || len(o.Server.AllowCmds) == 0 {
-		o.Server.AllowCmds = make([]string, len(fopts.Server.AllowCmds))
-		copy(o.Server.AllowCmds, fopts.Server.AllowCmds)
-	}
-
-	return o
-}
-
 var allCommands = []string{
 	"copy", "paste", "open",
+}
+
+func (o *Options) EOLCode() string {
+	switch strings.ToUpper(o.EOL) {
+	case "", "PASS":
+		return ""
+
+	case "CR", "\r":
+		return "\r"
+
+	case "LF", "\n":
+		return "\n"
+
+	case "CRLF", "\r\n":
+		return "\r\n"
+
+	case "NATIVE":
+		if runtime.GOOS == "windows" {
+			return "\r\n"
+		}
+		return "\n"
+
+	default:
+		return ""
+	}
 }
 
 type ServerOptions struct {
@@ -196,8 +131,23 @@ func (o *ServerOptions) Clone() *ServerOptions {
 	return newOpts
 }
 
+func (o *ServerOptions) Fill(other *ServerOptions) {
+	if o.Daemon == false {
+		o.Daemon = other.Daemon
+	}
+
+	if o.AllowCmds == nil || len(o.AllowCmds) == 0 {
+		if other.AllowCmds != nil {
+			o.AllowCmds = make([]string, len(other.AllowCmds))
+			copy(o.AllowCmds, other.AllowCmds)
+		} else {
+			o.AllowCmds = make([]string, 0)
+		}
+	}
+}
+
 func (o *ServerOptions) AllowCommands() []string {
-	if len(o.AllowCmds) == 0 {
+	if o.AllowCmds == nil || len(o.AllowCmds) == 0 {
 		return allCommands[:]
 	}
 
@@ -212,23 +162,4 @@ func (o *ServerOptions) AllowCommands() []string {
 	}
 
 	return res
-}
-
-func LoadConfig(file string) (*Options, error) {
-	f, err := os.Open(file)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
-	var conf Options
-	decoder := toml.NewDecoder(f)
-	if err := decoder.Decode(&conf); err != nil {
-		return nil, err
-	}
-
-	if err := conf.EOL.Set(string(conf.EOL)); err != nil {
-		return nil, fmt.Errorf("eol option error: %s in %s", err.Error(), file)
-	}
-	return &conf, nil
 }

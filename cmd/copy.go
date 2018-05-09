@@ -17,7 +17,7 @@ var copyCmd = &cobra.Command{
 
 func runCopyCmd(cmd *cobra.Command, args []string) error {
 	config := &client.Config{
-		EOL: globalOpts.EOL.Code(),
+		EOL: globalOpts.EOLCode(),
 	}
 	return client.RunRFunc(globalOpts.Network(), globalOpts.Address(), config, func(rfunc *client.RFunc) error {
 		var buf bytes.Buffer

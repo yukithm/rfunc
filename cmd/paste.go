@@ -15,7 +15,7 @@ var pasteCmd = &cobra.Command{
 
 func runPasteCmd(cmd *cobra.Command, args []string) error {
 	config := &client.Config{
-		EOL: globalOpts.EOL.Code(),
+		EOL: globalOpts.EOLCode(),
 	}
 	return client.RunRFunc(globalOpts.Network(), globalOpts.Address(), config, func(rfunc *client.RFunc) error {
 		text, err := rfunc.Paste()

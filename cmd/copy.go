@@ -16,7 +16,10 @@ var copyCmd = &cobra.Command{
 }
 
 func runCopyCmd(cmd *cobra.Command, args []string) error {
-	return client.RunRFunc(globalOpts.Network(), globalOpts.Address(), func(rfunc *client.RFunc) error {
+	config := &client.Config{
+		EOL: globalOpts.EOL.Code(),
+	}
+	return client.RunRFunc(globalOpts.Network(), globalOpts.Address(), config, func(rfunc *client.RFunc) error {
 		var buf bytes.Buffer
 		if _, err := io.Copy(&buf, os.Stdin); err != nil {
 			return err

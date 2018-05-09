@@ -92,7 +92,8 @@ Each item is same as a command line option.
   "addr": "ADDR:PORT",
   "sock": "/path/to/socket",
   "logfile": "/path/to/logfile",
-  "quiet": boolean
+  "quiet": boolean,
+  "eol": "LF|CRLF|NATIVE|PASS"
 }
 ```
 

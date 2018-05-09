@@ -12,7 +12,10 @@ var openCmd = &cobra.Command{
 }
 
 func runOpenCmd(cmd *cobra.Command, args []string) error {
-	return client.RunRFunc(globalOpts.Network(), globalOpts.Address(), func(rfunc *client.RFunc) error {
+	config := &client.Config{
+		EOL: globalOpts.EOL.Code(),
+	}
+	return client.RunRFunc(globalOpts.Network(), globalOpts.Address(), config, func(rfunc *client.RFunc) error {
 		return rfunc.OpenURL(args...)
 	})
 }

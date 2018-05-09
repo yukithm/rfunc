@@ -2,18 +2,79 @@ package cmd
 
 import (
 	"encoding/json"
+	"errors"
 	"net"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 
 	"github.com/spf13/pflag"
 )
 
+type LineEnding string
+
+const (
+	EOL_PASS   = LineEnding("")
+	EOL_LF     = LineEnding("\n")
+	EOL_CRLF   = LineEnding("\r\n")
+	EOL_NATIVE = LineEnding("NATIVE")
+)
+
+func (e *LineEnding) String() string {
+	switch *e {
+	case EOL_PASS:
+		return "PASS"
+	case EOL_LF:
+		return "LF"
+	case EOL_CRLF:
+		return "CRLF"
+	case EOL_NATIVE:
+		return "NATIVE"
+	}
+	return "Invalid LineEnding value!"
+}
+
+func (e *LineEnding) Type() string {
+	return "string"
+}
+
+func (e *LineEnding) Set(value string) error {
+	switch strings.ToUpper(value) {
+	case "PASS":
+		*e = EOL_PASS
+	case "LF":
+		*e = EOL_LF
+	case "CRLF":
+		*e = EOL_CRLF
+	case "NATIVE":
+		*e = EOL_NATIVE
+	default:
+		return errors.New("Unsupported")
+	}
+
+	return nil
+}
+
+func (e *LineEnding) Code() string {
+	if *e != EOL_NATIVE {
+		return string(*e)
+	}
+
+	switch runtime.GOOS {
+	case "windows":
+		return string(EOL_CRLF)
+	default:
+		return string(EOL_LF)
+	}
+}
+
 type GlobalOptions struct {
-	Addr    string `json:"addr"`
-	Sock    string `json:"sock"`
-	Logfile string `json:"logfile"`
-	Quiet   bool   `json:"quiet"`
+	Addr    string     `json:"addr"`
+	Sock    string     `json:"sock"`
+	Logfile string     `json:"logfile"`
+	Quiet   bool       `json:"quiet"`
+	EOL     LineEnding `json:"eol"`
 }
 
 func (o *GlobalOptions) Clone() *GlobalOptions {
@@ -36,6 +97,7 @@ func (o *GlobalOptions) Merge(other *GlobalOptions) {
 	}
 
 	o.Quiet = other.Quiet
+	o.EOL = other.EOL
 }
 
 func (o *GlobalOptions) AbsPaths() {
@@ -95,6 +157,9 @@ func MergeFlagOptions(opts *GlobalOptions, fopts *FlagOptions) *GlobalOptions {
 	}
 	if fopts.Flags.Changed("quiet") || o.Quiet == false {
 		o.Quiet = fopts.Quiet
+	}
+	if fopts.Flags.Changed("eol") || o.EOL == "" {
+		o.EOL = fopts.EOL
 	}
 
 	return o

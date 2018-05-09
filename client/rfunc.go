@@ -6,18 +6,24 @@ import (
 	"time"
 
 	pb "github.com/yukithm/rfunc/rfuncs"
+	"github.com/yukithm/rfunc/text"
 	"google.golang.org/grpc"
 )
 
 const RPCTimeout = time.Second * 5
 
+type Config struct {
+	EOL string
+}
+
 type RFunc struct {
+	Config *Config
 	conn   *grpc.ClientConn
 	rfuncs pb.RFuncsClient
 }
 
-func RunRFunc(network, addr string, f func(*RFunc) error) error {
-	rfunc := &RFunc{}
+func RunRFunc(network, addr string, config *Config, f func(*RFunc) error) error {
+	rfunc := &RFunc{Config: config}
 	if err := rfunc.Connect(network, addr); err != nil {
 		return err
 	}
@@ -48,12 +54,13 @@ func (f *RFunc) Close() error {
 	return nil
 }
 
-func (f *RFunc) Copy(text string) error {
+func (f *RFunc) Copy(str string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), RPCTimeout)
 	defer cancel()
 
+	str = f.convertLineEnding(str)
 	_, err := f.rfuncs.Copy(ctx, &pb.CopyRequest{
-		ClipContent: pb.MakeTextClipboardContent(text),
+		ClipContent: pb.MakeTextClipboardContent(str),
 	})
 	return err
 }
@@ -74,7 +81,8 @@ func (f *RFunc) Paste() (string, error) {
 	content := res.GetClipContent()
 	switch content.GetType() {
 	case pb.ClipboardType_TEXT:
-		return content.GetText(), nil
+		str := f.convertLineEnding(content.GetText())
+		return str, nil
 	}
 
 	return "", fmt.Errorf("Unsupported content: %s", content.GetType())
@@ -88,4 +96,12 @@ func (f *RFunc) OpenURL(url ...string) error {
 		Url: url,
 	})
 	return err
+}
+
+func (f *RFunc) convertLineEnding(str string) string {
+	if f.Config == nil || f.Config.EOL == "" {
+		return str
+	}
+
+	return text.ConvertLineEnding(str, f.Config.EOL)
 }

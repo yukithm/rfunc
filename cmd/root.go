@@ -22,6 +22,7 @@ var configOpts *GlobalOptions
 var flagOpts = &FlagOptions{
 	GlobalOptions: &GlobalOptions{
 		Addr: "127.0.0.1:8299",
+		EOL:  "NATIVE",
 	},
 }
 
@@ -50,6 +51,7 @@ func init() {
 	pf.StringVarP(&flagOpts.Sock, "sock", "s", flagOpts.Sock, "unix domain socket path")
 	pf.StringVarP(&flagOpts.Logfile, "logfile", "l", flagOpts.Logfile, "logfile")
 	pf.BoolVarP(&flagOpts.Quiet, "quiet", "q", flagOpts.Quiet, "suppress outputs (except paste content")
+	pf.Var(&flagOpts.EOL, "eol", "line ending (LF|CRLF|NATIVE|PASS)")
 	flagOpts.Flags = pf
 
 	rootCmd.AddCommand(copyCmd)

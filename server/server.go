@@ -11,7 +11,12 @@ import (
 	"github.com/yukithm/rfunc/server/shell"
 )
 
+type Config struct {
+	EOL string
+}
+
 type Server struct {
+	Config    *Config
 	Clipboard clipboard.Clipboard
 	Shell     shell.Shell
 	Logger    *log.Logger
@@ -35,8 +40,13 @@ func (s *Server) Serve(lis net.Listener) error {
 		s.Shell = shell
 	}
 
-	s.rfunc = NewRFunc(lis, s.Clipboard, s.Shell)
-	s.rfunc.Logger = s.Logger
+	s.rfunc = &RFunc{
+		Config:    s.Config,
+		Logger:    s.Logger,
+		Listener:  lis,
+		Clipboard: s.Clipboard,
+		Shell:     s.Shell,
+	}
 
 	quit := make(chan struct{})
 	defer close(quit)

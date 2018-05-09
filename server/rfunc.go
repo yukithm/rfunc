@@ -11,6 +11,7 @@ import (
 	pb "github.com/yukithm/rfunc/rfuncs"
 	"github.com/yukithm/rfunc/server/clipboard"
 	"github.com/yukithm/rfunc/server/shell"
+	"github.com/yukithm/rfunc/text"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/reflection"
@@ -18,26 +19,13 @@ import (
 )
 
 type RFunc struct {
-	Logger     *log.Logger
-	listener   net.Listener
+	Config    *Config
+	Logger    *log.Logger
+	Listener  net.Listener
+	Clipboard clipboard.Clipboard
+	Shell     shell.Shell
+
 	grpcServer *grpc.Server
-	clipboard  clipboard.Clipboard
-	shell      shell.Shell
-}
-
-func NewRFunc(lis net.Listener, clipboard clipboard.Clipboard, shell shell.Shell) *RFunc {
-	s := &RFunc{
-		listener:  lis,
-		clipboard: clipboard,
-		shell:     shell,
-	}
-
-	gs := grpc.NewServer()
-	pb.RegisterRFuncsServer(gs, s)
-	reflection.Register(gs)
-	s.grpcServer = gs
-
-	return s
 }
 
 func (f *RFunc) Log() *log.Logger {
@@ -48,7 +36,19 @@ func (f *RFunc) Log() *log.Logger {
 }
 
 func (f *RFunc) Start() error {
-	return f.grpcServer.Serve(f.listener)
+	f.initServer()
+	return f.grpcServer.Serve(f.Listener)
+}
+
+func (f *RFunc) initServer() {
+	if f.grpcServer != nil {
+		return
+	}
+
+	gs := grpc.NewServer()
+	pb.RegisterRFuncsServer(gs, f)
+	reflection.Register(gs)
+	f.grpcServer = gs
 }
 
 func (f *RFunc) Stop() {
@@ -71,7 +71,8 @@ func (f *RFunc) Copy(ctx context.Context, req *pb.CopyRequest) (*pb.CopyReply, e
 	contentType := req.GetClipContent().GetType()
 	switch contentType {
 	case pb.ClipboardType_TEXT:
-		err := f.clipboard.CopyText(req.GetClipContent().GetText())
+		str := f.convertLineEnding(req.GetClipContent().GetText())
+		err := f.Clipboard.CopyText(str)
 		if err != nil {
 			f.Log().Println("[gRPC] Copy:", err)
 			return nil, status.Error(codes.Internal, err.Error())
@@ -91,7 +92,8 @@ func (f *RFunc) Paste(ctx context.Context, req *pb.PasteRequest) (*pb.PasteReply
 		return nil, status.Error(codes.Unavailable, "Unsupported content type")
 	}
 
-	content, err := f.clipboard.PasteText()
+	content, err := f.Clipboard.PasteText()
+	content = f.convertLineEnding(content)
 	if err != nil {
 		f.Log().Println("[gRPC] Paste:", err)
 		return nil, status.Error(codes.Internal, err.Error())
@@ -112,7 +114,7 @@ func (f *RFunc) OpenURL(ctx context.Context, req *pb.OpenURLRequest) (*pb.OpenUR
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 	}
-	if err := f.shell.OpenURL(urls...); err != nil {
+	if err := f.Shell.OpenURL(urls...); err != nil {
 		f.Log().Println("[gRPC] OpenURL:", err)
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -136,4 +138,12 @@ func validateURL(ref string) error {
 	}
 
 	return nil
+}
+
+func (f *RFunc) convertLineEnding(str string) string {
+	if f.Config == nil || f.Config.EOL == "" {
+		return str
+	}
+
+	return text.ConvertLineEnding(str, f.Config.EOL)
 }

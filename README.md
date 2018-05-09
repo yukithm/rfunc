@@ -81,20 +81,18 @@ ln -s rfunc xdg-open
 
 rfunc reads the first config file in following paths.
 
-* ~/.config/rfunc/rfunc.json
-* ~/.rfunc.json
+* ~/.config/rfunc/rfunc.toml
+* ~/.rfunc.toml
 
 Config file has following structure.
-Each item is same as a command line option.
+Each item is same as a command line option (See `rfunc --help`).
 
-```json
-{
-  "addr": "ADDR:PORT",
-  "sock": "/path/to/socket",
-  "logfile": "/path/to/logfile",
-  "quiet": boolean,
-  "eol": "LF|CRLF|NATIVE|PASS"
-}
+```toml
+addr = "127.0.0.1:8299"
+sock = "/path/to/socket"
+logfile = "/path/to/logfile"
+quiet = false
+eol = "NATIVE"
 ```
 
 ## Similar projects

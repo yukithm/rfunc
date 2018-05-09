@@ -14,8 +14,8 @@ import (
 )
 
 var defaultConfigFiles = []string{
-	"~/.config/rfunc/rfunc.json",
-	"~/.rfunc.json",
+	"~/.config/rfunc/rfunc.toml",
+	"~/.rfunc.toml",
 }
 var configfile string
 var configOpts *GlobalOptions

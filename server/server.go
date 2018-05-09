@@ -12,7 +12,8 @@ import (
 )
 
 type Config struct {
-	EOL string
+	EOL       string
+	AllowCmds []string
 }
 
 type Server struct {

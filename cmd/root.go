@@ -10,6 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"github.com/yukithm/rfunc/utils"
 )
 
 var defaultConfigFiles = []string{
@@ -128,18 +129,18 @@ func initApp(cmd *cobra.Command, args []string) (err error) {
 func newLogDevice(opts *GlobalOptions, flags *pflag.FlagSet) (io.WriteCloser, error) {
 	// Keep logging to the file even if specified quiet option
 	if opts.Quiet && (opts.Logfile == "" || opts.Logfile == "-") {
-		return NopWriteCloser(ioutil.Discard), nil
+		return utils.NopWriteCloser(ioutil.Discard), nil
 	}
 
 	switch opts.Logfile {
 	case "":
 		if flags.Changed("logfile") {
-			return NopWriteCloser(ioutil.Discard), nil
+			return utils.NopWriteCloser(ioutil.Discard), nil
 		}
-		return NopWriteCloser(os.Stderr), nil
+		return utils.NopWriteCloser(os.Stderr), nil
 
 	case "-":
-		return NopWriteCloser(os.Stdout), nil
+		return utils.NopWriteCloser(os.Stdout), nil
 
 	default:
 		file, err := os.OpenFile(opts.Logfile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600)
@@ -155,7 +156,7 @@ func loadConfig(conf string) (*GlobalOptions, error) {
 		return &GlobalOptions{}, nil
 	}
 
-	path, err := ExpandPath(conf)
+	path, err := utils.ExpandPath(conf)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +165,7 @@ func loadConfig(conf string) (*GlobalOptions, error) {
 
 func loadDefaultConfig() (*GlobalOptions, error) {
 	for _, file := range defaultConfigFiles {
-		path, err := ExpandPath(file)
+		path, err := utils.ExpandPath(file)
 		if err != nil {
 			return nil, err
 		}

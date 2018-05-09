@@ -1,4 +1,4 @@
-package cmd
+package utils
 
 import (
 	"io"
@@ -34,4 +34,13 @@ func ExpandPath(path string) (string, error) {
 		return "", err
 	}
 	return epath, nil
+}
+
+func FindString(list []string, value string) int {
+	for i, v := range list {
+		if v == value {
+			return i
+		}
+	}
+	return -1
 }

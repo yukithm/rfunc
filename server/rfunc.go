@@ -12,6 +12,7 @@ import (
 	"github.com/yukithm/rfunc/server/clipboard"
 	"github.com/yukithm/rfunc/server/shell"
 	"github.com/yukithm/rfunc/text"
+	"github.com/yukithm/rfunc/utils"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/reflection"
@@ -66,7 +67,12 @@ func (f *RFunc) GracefulStop() {
 }
 
 func (f *RFunc) Copy(ctx context.Context, req *pb.CopyRequest) (*pb.CopyReply, error) {
-	f.Log().Println("[gRPC] Copy")
+	if f.allowed("copy") {
+		f.Log().Println("[gRPC] Copy")
+	} else {
+		f.Log().Println("[gRPC] Copy is not allowed")
+		return nil, status.Error(codes.PermissionDenied, "copy command is not allowd")
+	}
 
 	contentType := req.GetClipContent().GetType()
 	switch contentType {
@@ -85,7 +91,12 @@ func (f *RFunc) Copy(ctx context.Context, req *pb.CopyRequest) (*pb.CopyReply, e
 }
 
 func (f *RFunc) Paste(ctx context.Context, req *pb.PasteRequest) (*pb.PasteReply, error) {
-	f.Log().Println("[gRPC] Paste")
+	if f.allowed("paste") {
+		f.Log().Println("[gRPC] Paste")
+	} else {
+		f.Log().Println("[gRPC] Paste is not allowed")
+		return nil, status.Error(codes.PermissionDenied, "paste command is not allowd")
+	}
 
 	if !req.Acceptable(pb.ClipboardType_TEXT) {
 		f.Log().Println("[gRPC] Paste: Unsupported content type")
@@ -106,6 +117,12 @@ func (f *RFunc) Paste(ctx context.Context, req *pb.PasteRequest) (*pb.PasteReply
 
 func (f *RFunc) OpenURL(ctx context.Context, req *pb.OpenURLRequest) (*pb.OpenURLReply, error) {
 	f.Log().Println("[gRPC] OpenURL")
+	if f.allowed("open") {
+		f.Log().Println("[gRPC] OpenURL")
+	} else {
+		f.Log().Println("[gRPC] OpenURL is not allowed")
+		return nil, status.Error(codes.PermissionDenied, "open command is not allowd")
+	}
 
 	urls := req.GetUrl()
 	for _, ref := range urls {
@@ -138,6 +155,14 @@ func validateURL(ref string) error {
 	}
 
 	return nil
+}
+
+func (f *RFunc) allowed(name string) bool {
+	if f.Config == nil || f.Config.AllowCmds == nil || len(f.Config.AllowCmds) == 0 {
+		return true
+	}
+
+	return utils.FindString(f.Config.AllowCmds, name) != -1
 }
 
 func (f *RFunc) convertLineEnding(str string) string {

@@ -2,6 +2,7 @@ package utils
 
 import (
 	"io"
+	"os"
 	"os/user"
 	"path/filepath"
 	"strings"
@@ -34,6 +35,13 @@ func ExpandPath(path string) (string, error) {
 		return "", err
 	}
 	return epath, nil
+}
+
+func FileExists(file string) bool {
+	if _, err := os.Stat(file); err != nil {
+		return false
+	}
+	return true
 }
 
 func FindString(list []string, value string) int {

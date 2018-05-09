@@ -14,9 +14,8 @@ var serverCmd = &cobra.Command{
 
 func init() {
 	f := serverCmd.Flags()
-	f.BoolVar(&flagOpts.Server.Daemon, "daemon", flagOpts.Server.Daemon, "daemonize")
-	f.StringSliceVar(&flagOpts.Server.AllowCmds, "allow-commands", nil, "allow only specified commands")
-	flagOpts.ServerFlags = f
+	f.BoolVar(&globalOpts.Server.Daemon, "daemon", globalOpts.Server.Daemon, "daemonize")
+	f.StringSliceVar(&globalOpts.Server.AllowCmds, "allow-commands", nil, "allow only specified commands")
 }
 
 func runServerCmd(cmd *cobra.Command, args []string) error {
@@ -34,7 +33,7 @@ func runServerCmd(cmd *cobra.Command, args []string) error {
 	defer logger.Println("Server stopped")
 	s := &server.Server{
 		Config: &server.Config{
-			EOL:       globalOpts.EOL.Code(),
+			EOL:       globalOpts.EOLCode(),
 			AllowCmds: globalOpts.Server.AllowCommands(),
 		},
 		Logger: logger,

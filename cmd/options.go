@@ -10,6 +10,7 @@ import (
 
 	"github.com/pelletier/go-toml"
 	"github.com/spf13/pflag"
+	"github.com/yukithm/rfunc/utils"
 )
 
 type LineEnding string
@@ -69,21 +70,23 @@ func (e *LineEnding) Code() string {
 	}
 }
 
-type GlobalOptions struct {
-	Addr    string     `toml:"addr"`
-	Sock    string     `toml:"sock"`
-	Logfile string     `toml:"logfile"`
-	Quiet   bool       `toml:"quiet"`
-	EOL     LineEnding `toml:"eol"`
+type Options struct {
+	Addr    string        `toml:"addr"`
+	Sock    string        `toml:"sock"`
+	Logfile string        `toml:"logfile"`
+	Quiet   bool          `toml:"quiet"`
+	EOL     LineEnding    `toml:"eol"`
+	Server  ServerOptions `toml:"server"`
 }
 
-func (o *GlobalOptions) Clone() *GlobalOptions {
-	newOpts := &GlobalOptions{}
+func (o *Options) Clone() *Options {
+	newOpts := &Options{}
 	*newOpts = *o
+	newOpts.Server = *o.Server.Clone()
 	return newOpts
 }
 
-func (o *GlobalOptions) Merge(other *GlobalOptions) {
+func (o *Options) Merge(other *Options) {
 	if other.Addr != "" {
 		o.Addr = other.Addr
 	}
@@ -100,14 +103,14 @@ func (o *GlobalOptions) Merge(other *GlobalOptions) {
 	o.EOL = other.EOL
 }
 
-func (o *GlobalOptions) AbsPaths() {
+func (o *Options) AbsPaths() {
 	if o.Logfile != "" && o.Logfile != "-" {
 		o.Logfile = o.abs(o.Logfile)
 	}
 	o.Sock = o.abs(o.Sock)
 }
 
-func (o *GlobalOptions) abs(path string) string {
+func (o *Options) abs(path string) string {
 	if path == "" {
 		return ""
 	}
@@ -117,21 +120,21 @@ func (o *GlobalOptions) abs(path string) string {
 	return path
 }
 
-func (o *GlobalOptions) Network() string {
+func (o *Options) Network() string {
 	if o.Sock != "" {
 		return "unix"
 	}
 	return "tcp"
 }
 
-func (o *GlobalOptions) Address() string {
+func (o *Options) Address() string {
 	if o.Sock != "" {
 		return o.Sock
 	}
 	return o.Addr
 }
 
-func (o *GlobalOptions) NetAddr() (net.Addr, error) {
+func (o *Options) NetAddr() (net.Addr, error) {
 	if o.Sock != "" {
 		return net.ResolveUnixAddr("unix", o.Sock)
 	}
@@ -139,40 +142,86 @@ func (o *GlobalOptions) NetAddr() (net.Addr, error) {
 }
 
 type FlagOptions struct {
-	*GlobalOptions
-	Flags *pflag.FlagSet
+	*Options
+	GlobalFlags *pflag.FlagSet
+	ServerFlags *pflag.FlagSet
 }
 
-func MergeFlagOptions(opts *GlobalOptions, fopts *FlagOptions) *GlobalOptions {
+func MergeFlagOptions(opts *Options, fopts *FlagOptions) *Options {
 	o := opts.Clone()
 
-	if fopts.Flags.Changed("addr") || o.Addr == "" {
+	if fopts.GlobalFlags.Changed("addr") || o.Addr == "" {
 		o.Addr = fopts.Addr
 	}
-	if fopts.Flags.Changed("sock") || o.Sock == "" {
+	if fopts.GlobalFlags.Changed("sock") || o.Sock == "" {
 		o.Sock = fopts.Sock
 	}
-	if fopts.Flags.Changed("logfile") || o.Logfile == "" {
+	if fopts.GlobalFlags.Changed("logfile") || o.Logfile == "" {
 		o.Logfile = fopts.Logfile
 	}
-	if fopts.Flags.Changed("quiet") || o.Quiet == false {
+	if fopts.GlobalFlags.Changed("quiet") || o.Quiet == false {
 		o.Quiet = fopts.Quiet
 	}
-	if fopts.Flags.Changed("eol") || o.EOL == "" {
+	if fopts.GlobalFlags.Changed("eol") || o.EOL == "" {
 		o.EOL = fopts.EOL
+	}
+
+	if fopts.ServerFlags.Changed("daemon") || o.Server.Daemon == false {
+		o.Server.Daemon = fopts.Server.Daemon
+	}
+	if fopts.ServerFlags.Changed("allow-commands") || o.Server.AllowCmds == nil || len(o.Server.AllowCmds) == 0 {
+		o.Server.AllowCmds = make([]string, len(fopts.Server.AllowCmds))
+		copy(o.Server.AllowCmds, fopts.Server.AllowCmds)
 	}
 
 	return o
 }
 
-func LoadConfig(file string) (*GlobalOptions, error) {
+var allCommands = []string{
+	"copy", "paste", "open",
+}
+
+type ServerOptions struct {
+	Daemon    bool     `toml:"daemon"`
+	AllowCmds []string `toml:"allow-commands"`
+}
+
+func (o *ServerOptions) Clone() *ServerOptions {
+	newOpts := &ServerOptions{}
+	*newOpts = *o
+	if o.AllowCmds != nil {
+		newOpts.AllowCmds = make([]string, len(o.AllowCmds))
+		copy(newOpts.AllowCmds, o.AllowCmds)
+	}
+	return newOpts
+}
+
+func (o *ServerOptions) AllowCommands() []string {
+	if len(o.AllowCmds) == 0 {
+		return allCommands[:]
+	}
+
+	res := []string{}
+	for _, name := range o.AllowCmds {
+		name = strings.ToLower(name)
+		if name == "all" {
+			return allCommands[:]
+		} else if utils.FindString(allCommands, name) != -1 && utils.FindString(res, name) == -1 {
+			res = append(res, name)
+		}
+	}
+
+	return res
+}
+
+func LoadConfig(file string) (*Options, error) {
 	f, err := os.Open(file)
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
 
-	var conf GlobalOptions
+	var conf Options
 	decoder := toml.NewDecoder(f)
 	if err := decoder.Decode(&conf); err != nil {
 		return nil, err

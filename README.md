@@ -93,6 +93,10 @@ sock = "/path/to/socket"
 logfile = "/path/to/logfile"
 quiet = false
 eol = "NATIVE"
+
+[server]
+daemon = false
+allow-commands = ["copy", "paste"]
 ```
 
 ## Similar projects

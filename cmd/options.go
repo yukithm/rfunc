@@ -1,14 +1,14 @@
 package cmd
 
 import (
-	"encoding/json"
-	"errors"
+	"fmt"
 	"net"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 
+	"github.com/pelletier/go-toml"
 	"github.com/spf13/pflag"
 )
 
@@ -23,16 +23,16 @@ const (
 
 func (e *LineEnding) String() string {
 	switch *e {
-	case EOL_PASS:
+	case "PASS", EOL_PASS:
 		return "PASS"
-	case EOL_LF:
+	case "LF", EOL_LF:
 		return "LF"
-	case EOL_CRLF:
+	case "CRLF", EOL_CRLF:
 		return "CRLF"
 	case EOL_NATIVE:
 		return "NATIVE"
 	}
-	return "Invalid LineEnding value!"
+	return string(*e)
 }
 
 func (e *LineEnding) Type() string {
@@ -41,16 +41,16 @@ func (e *LineEnding) Type() string {
 
 func (e *LineEnding) Set(value string) error {
 	switch strings.ToUpper(value) {
-	case "PASS":
+	case "PASS", "":
 		*e = EOL_PASS
-	case "LF":
+	case "LF", "\n":
 		*e = EOL_LF
-	case "CRLF":
+	case "CRLF", "\r\n":
 		*e = EOL_CRLF
 	case "NATIVE":
 		*e = EOL_NATIVE
 	default:
-		return errors.New("Unsupported")
+		return fmt.Errorf("Unsupported value '%s'", *e)
 	}
 
 	return nil
@@ -70,11 +70,11 @@ func (e *LineEnding) Code() string {
 }
 
 type GlobalOptions struct {
-	Addr    string     `json:"addr"`
-	Sock    string     `json:"sock"`
-	Logfile string     `json:"logfile"`
-	Quiet   bool       `json:"quiet"`
-	EOL     LineEnding `json:"eol"`
+	Addr    string     `toml:"addr"`
+	Sock    string     `toml:"sock"`
+	Logfile string     `toml:"logfile"`
+	Quiet   bool       `toml:"quiet"`
+	EOL     LineEnding `toml:"eol"`
 }
 
 func (o *GlobalOptions) Clone() *GlobalOptions {
@@ -173,10 +173,13 @@ func LoadConfig(file string) (*GlobalOptions, error) {
 	defer f.Close()
 
 	var conf GlobalOptions
-	decoder := json.NewDecoder(f)
+	decoder := toml.NewDecoder(f)
 	if err := decoder.Decode(&conf); err != nil {
 		return nil, err
 	}
 
+	if err := conf.EOL.Set(string(conf.EOL)); err != nil {
+		return nil, fmt.Errorf("eol option error: %s in %s", err.Error(), file)
+	}
 	return &conf, nil
 }

@@ -27,6 +27,12 @@
   version = "v1.0"
 
 [[projects]]
+  name = "github.com/pelletier/go-toml"
+  packages = ["."]
+  revision = "acdc4509485b587f5e675510c4f2c63e90ff68a8"
+  version = "v1.1.0"
+
+[[projects]]
   name = "github.com/spf13/cobra"
   packages = ["."]
   revision = "a1f051bc3eba734da4772d60e2d677f47cf93ef4"
@@ -115,6 +121,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "4b425dd4dcc8eac575d6fbb5c3acbe2af0b855c7b6bda6d0ff0bc92d3c446744"
+  inputs-digest = "1524bdde9ad3849504b4e7f572a3a840745d8a196e799df1e14cd459417576f2"
   solver-name = "gps-cdcl"
   solver-version = 1

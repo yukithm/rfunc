@@ -1,4 +1,4 @@
-package cmd
+package options
 
 import (
 	"os"
@@ -13,23 +13,23 @@ var defaultConfigFiles = []string{
 	"~/.config/rfunc/rfunc.toml",
 	"~/.rfunc.toml",
 }
-var configfile string
+var ConfigFile string
 var configFlagSet *pflag.FlagSet
 
 func init() {
 	configFlagSet = pflag.NewFlagSet(filepath.Base(os.Args[0]), pflag.ContinueOnError)
 	configFlagSet.ParseErrorsWhitelist.UnknownFlags = true
-	configFlagSet.StringVarP(&configfile, "conf", "c", configfile, "configuration file")
+	configFlagSet.StringVarP(&ConfigFile, "conf", "c", ConfigFile, "configuration file")
 }
 
-func loadConfig() (*Options, error) {
+func LoadConfig() (*Options, error) {
 	configFlagSet.Parse(os.Args[1:])
-	if configfile == "" {
-		configfile = findDefaultConfigFile()
+	if ConfigFile == "" {
+		ConfigFile = findDefaultConfigFile()
 	}
 
-	if configfile != "" {
-		return loadConfigFile(configfile)
+	if ConfigFile != "" {
+		return loadConfigFile(ConfigFile)
 	}
 
 	return &Options{}, nil

@@ -10,14 +10,15 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/yukithm/rfunc/options"
 	"github.com/yukithm/rfunc/utils"
 )
 
-var defaultOpts = &Options{
+var defaultOpts = &options.Options{
 	Addr: "127.0.0.1:8299",
 	EOL:  "NATIVE",
 }
-var globalOpts = &Options{}
+var globalOpts = &options.Options{}
 
 var logger *log.Logger
 var logdev io.WriteCloser
@@ -45,7 +46,7 @@ func initFlags() {
 	pf := rootCmd.PersistentFlags()
 	pf.SortFlags = false
 
-	pf.StringVarP(&configfile, "conf", "c", configfile, "configuration file")
+	pf.StringP("conf", "c", options.ConfigFile, "configuration file")
 	pf.StringVarP(&globalOpts.Addr, "addr", "a", globalOpts.Addr, "address and port")
 	pf.StringVarP(&globalOpts.Sock, "sock", "s", globalOpts.Sock, "unix domain socket path")
 	pf.StringVarP(&globalOpts.Logfile, "logfile", "l", globalOpts.Logfile, "logfile")
@@ -60,7 +61,7 @@ func Execute() (code int) {
 		}
 	}()
 
-	configOpts, err := loadConfig()
+	configOpts, err := options.LoadConfig()
 	if err != nil {
 		fmt.Println(err)
 		return 1
@@ -113,7 +114,7 @@ func initApp(cmd *cobra.Command, args []string) (err error) {
 	return
 }
 
-func newLogDevice(opts *Options) (io.WriteCloser, error) {
+func newLogDevice(opts *options.Options) (io.WriteCloser, error) {
 	// Keep logging to the file even if specified quiet option
 	if opts.Quiet && (opts.Logfile == "" || opts.Logfile == "-") {
 		return utils.NopWriteCloser(ioutil.Discard), nil

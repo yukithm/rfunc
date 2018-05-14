@@ -10,6 +10,9 @@ import (
 	"log"
 	"net"
 	"net/url"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/yukithm/rfunc/options"
 	pb "github.com/yukithm/rfunc/rfuncs"
@@ -24,38 +27,90 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type RFunc struct {
-	Config    *Config
-	Logger    *log.Logger
-	Listener  net.Listener
-	Clipboard clipboard.Clipboard
-	Shell     shell.Shell
+type Config struct {
+	EOL       string
+	AllowCmds []string
+	TLS       *options.TLSOptions
+}
 
+type RFuncServer struct {
+	Config     *Config
+	Clipboard  clipboard.Clipboard
+	Shell      shell.Shell
+	Logger     *log.Logger
 	grpcServer *grpc.Server
 }
 
-func (f *RFunc) Log() *log.Logger {
-	if f.Logger == nil {
-		f.Logger = log.New(ioutil.Discard, "", 0)
+func (s *RFuncServer) Log() *log.Logger {
+	if s.Logger == nil {
+		s.Logger = log.New(ioutil.Discard, "", 0)
 	}
-	return f.Logger
+	return s.Logger
 }
 
-func (f *RFunc) Start() error {
-	if f.grpcServer == nil {
-		server, err := f.newServer()
+func (s *RFuncServer) Run(lis net.Listener) error {
+	quit := make(chan struct{})
+	defer close(quit)
+
+	errCh := make(chan error, 1)
+	defer close(errCh)
+
+	go func() {
+		err := s.Serve(lis)
+		errCh <- err
+	}()
+
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		for range sigCh {
+			quit <- struct{}{}
+		}
+	}()
+
+	for {
+		select {
+		case err := <-errCh:
+			return err
+
+		case <-quit:
+			s.GracefulStop()
+			break
+		}
+	}
+}
+
+func (s *RFuncServer) Serve(lis net.Listener) error {
+	if s.Clipboard == nil {
+		clip, err := clipboard.GetClipboard()
 		if err != nil {
 			return err
 		}
-		f.grpcServer = server
+		s.Clipboard = clip
 	}
-	return f.grpcServer.Serve(f.Listener)
+
+	if s.Shell == nil {
+		shell, err := shell.GetShell()
+		if err != nil {
+			return err
+		}
+		s.Shell = shell
+	}
+
+	if s.grpcServer == nil {
+		server, err := s.newServer()
+		if err != nil {
+			return err
+		}
+		s.grpcServer = server
+	}
+	return s.grpcServer.Serve(lis)
 }
 
-func (f *RFunc) newServer() (*grpc.Server, error) {
+func (s *RFuncServer) newServer() (*grpc.Server, error) {
 	opts := make([]grpc.ServerOption, 0)
-	if f.Config.TLS != nil && (f.Config.TLS.CertFile != "" || f.Config.TLS.CAFile != "") {
-		tlsConfig, err := newTLSConfig(f.Config.TLS)
+	if s.Config.TLS != nil && (s.Config.TLS.CertFile != "" || s.Config.TLS.CAFile != "") {
+		tlsConfig, err := newTLSConfig(s.Config.TLS)
 		if err != nil {
 			return nil, err
 		}
@@ -64,67 +119,67 @@ func (f *RFunc) newServer() (*grpc.Server, error) {
 	}
 
 	gs := grpc.NewServer(opts...)
-	pb.RegisterRFuncsServer(gs, f)
+	pb.RegisterRFuncsServer(gs, s)
 	reflection.Register(gs)
 
 	return gs, nil
 }
 
-func (f *RFunc) Stop() {
-	if f.grpcServer != nil {
-		f.grpcServer.Stop()
-		f.grpcServer = nil
+func (s *RFuncServer) Stop() {
+	if s.grpcServer != nil {
+		s.grpcServer.Stop()
+		s.grpcServer = nil
 	}
 }
 
-func (f *RFunc) GracefulStop() {
-	if f.grpcServer != nil {
-		f.grpcServer.GracefulStop()
-		f.grpcServer = nil
+func (s *RFuncServer) GracefulStop() {
+	if s.grpcServer != nil {
+		s.grpcServer.GracefulStop()
+		s.grpcServer = nil
 	}
 }
 
-func (f *RFunc) Copy(ctx context.Context, req *pb.CopyRequest) (*pb.CopyReply, error) {
-	if f.allowed("copy") {
-		f.Log().Println("[gRPC] Copy")
+func (s *RFuncServer) Copy(ctx context.Context, req *pb.CopyRequest) (*pb.CopyReply, error) {
+	if s.allowed("copy") {
+		s.Log().Println("[gRPC] Copy")
 	} else {
-		f.Log().Println("[gRPC] Copy is not allowed")
+		s.Log().Println("[gRPC] Copy is not allowed")
 		return nil, status.Error(codes.PermissionDenied, "copy command is not allowd")
 	}
 
 	contentType := req.GetClipContent().GetType()
 	switch contentType {
 	case pb.ClipboardType_TEXT:
-		str := f.convertLineEnding(req.GetClipContent().GetText())
-		err := f.Clipboard.CopyText(str)
+		str := s.convertLineEnding(req.GetClipContent().GetText())
+		err := s.Clipboard.CopyText(str)
 		if err != nil {
-			f.Log().Println("[gRPC] Copy:", err)
+			s.Log().Println("[gRPC] Copy:", err)
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 		return &pb.CopyReply{}, nil
 	}
 
-	f.Log().Println("[gRPC] Copy: Unsupported content type: ", contentType)
+	s.Log().Println("[gRPC] Copy: Unsupported content type: ", contentType)
 	return nil, status.Error(codes.Unavailable, "Unsupported content type")
 }
 
-func (f *RFunc) Paste(ctx context.Context, req *pb.PasteRequest) (*pb.PasteReply, error) {
-	if f.allowed("paste") {
-		f.Log().Println("[gRPC] Paste")
+func (s *RFuncServer) Paste(ctx context.Context, req *pb.PasteRequest) (*pb.PasteReply, error) {
+	if s.allowed("paste") {
+		s.Log().Println("[gRPC] Paste")
 	} else {
-		f.Log().Println("[gRPC] Paste is not allowed")
+		s.Log().Println("[gRPC] Paste is not allowed")
 		return nil, status.Error(codes.PermissionDenied, "paste command is not allowd")
 	}
 
 	if !req.Acceptable(pb.ClipboardType_TEXT) {
-		f.Log().Println("[gRPC] Paste: Unsupported content type")
+		s.Log().Println("[gRPC] Paste: Unsupported content type")
 		return nil, status.Error(codes.Unavailable, "Unsupported content type")
 	}
 
-	content, err := f.Clipboard.PasteText()
-	content = f.convertLineEnding(content)
+	content, err := s.Clipboard.PasteText()
+	content = s.convertLineEnding(content)
 	if err != nil {
-		f.Log().Println("[gRPC] Paste:", err)
+		s.Log().Println("[gRPC] Paste:", err)
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
@@ -133,24 +188,24 @@ func (f *RFunc) Paste(ctx context.Context, req *pb.PasteRequest) (*pb.PasteReply
 	}, nil
 }
 
-func (f *RFunc) OpenURL(ctx context.Context, req *pb.OpenURLRequest) (*pb.OpenURLReply, error) {
-	f.Log().Println("[gRPC] OpenURL")
-	if f.allowed("open") {
-		f.Log().Println("[gRPC] OpenURL")
+func (s *RFuncServer) OpenURL(ctx context.Context, req *pb.OpenURLRequest) (*pb.OpenURLReply, error) {
+	s.Log().Println("[gRPC] OpenURL")
+	if s.allowed("open") {
+		s.Log().Println("[gRPC] OpenURL")
 	} else {
-		f.Log().Println("[gRPC] OpenURL is not allowed")
+		s.Log().Println("[gRPC] OpenURL is not allowed")
 		return nil, status.Error(codes.PermissionDenied, "open command is not allowd")
 	}
 
 	urls := req.GetUrl()
 	for _, ref := range urls {
 		if err := validateURL(ref); err != nil {
-			f.Log().Println("[gRPC] OpenURL:", err)
+			s.Log().Println("[gRPC] OpenURL:", err)
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 	}
-	if err := f.Shell.OpenURL(urls...); err != nil {
-		f.Log().Println("[gRPC] OpenURL:", err)
+	if err := s.Shell.OpenURL(urls...); err != nil {
+		s.Log().Println("[gRPC] OpenURL:", err)
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
@@ -175,20 +230,20 @@ func validateURL(ref string) error {
 	return nil
 }
 
-func (f *RFunc) allowed(name string) bool {
-	if f.Config == nil || f.Config.AllowCmds == nil || len(f.Config.AllowCmds) == 0 {
+func (s *RFuncServer) allowed(name string) bool {
+	if s.Config == nil || s.Config.AllowCmds == nil || len(s.Config.AllowCmds) == 0 {
 		return true
 	}
 
-	return utils.FindString(f.Config.AllowCmds, name) != -1
+	return utils.FindString(s.Config.AllowCmds, name) != -1
 }
 
-func (f *RFunc) convertLineEnding(str string) string {
-	if f.Config == nil || f.Config.EOL == "" {
+func (s *RFuncServer) convertLineEnding(str string) string {
+	if s.Config == nil || s.Config.EOL == "" {
 		return str
 	}
 
-	return text.ConvertLineEnding(str, f.Config.EOL)
+	return text.ConvertLineEnding(str, s.Config.EOL)
 }
 
 func newTLSConfig(opts *options.TLSOptions) (*tls.Config, error) {

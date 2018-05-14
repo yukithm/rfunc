@@ -31,7 +31,7 @@ func runServerCmd(cmd *cobra.Command, args []string) error {
 
 	logger.Println("Server started at", lis.Addr())
 	defer logger.Println("Server stopped")
-	s := &server.Server{
+	s := &server.RFuncServer{
 		Config: &server.Config{
 			EOL:       globalOpts.EOLCode(),
 			AllowCmds: globalOpts.Server.AllowCommands(),

@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"github.com/VividCortex/godaemon"
 	"github.com/spf13/cobra"
 	"github.com/yukithm/rfunc/server"
 )
@@ -20,7 +19,9 @@ func init() {
 
 func runServerCmd(cmd *cobra.Command, args []string) error {
 	if globalOpts.Server.Daemon {
-		godaemon.MakeDaemon(&godaemon.DaemonAttr{})
+		if err := daemonize(); err != nil {
+			return err
+		}
 	}
 
 	lis, err := server.NewServerConn(globalOpts.Network(), globalOpts.Address())

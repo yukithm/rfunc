@@ -2,7 +2,6 @@ package options
 
 import (
 	"net"
-	"path/filepath"
 	"runtime"
 	"strings"
 
@@ -15,12 +14,14 @@ type Options struct {
 	Logfile string        `toml:"logfile"`
 	Quiet   bool          `toml:"quiet"`
 	EOL     string        `toml:"eol"`
+	TLS     TLSOptions    `toml:"tls"`
 	Server  ServerOptions `toml:"server"`
 }
 
 func (o *Options) Clone() *Options {
 	newOpts := &Options{}
 	*newOpts = *o
+	newOpts.TLS = *o.TLS.Clone()
 	newOpts.Server = *o.Server.Clone()
 	return newOpts
 }
@@ -46,24 +47,16 @@ func (o *Options) Fill(other *Options) {
 		o.EOL = other.EOL
 	}
 
+	o.TLS.Fill(&other.TLS)
 	o.Server.Fill(&other.Server)
 }
 
 func (o *Options) AbsPaths() {
 	if o.Logfile != "" && o.Logfile != "-" {
-		o.Logfile = o.abs(o.Logfile)
+		o.Logfile = utils.AbsPath(o.Logfile)
 	}
-	o.Sock = o.abs(o.Sock)
-}
-
-func (o *Options) abs(path string) string {
-	if path == "" {
-		return ""
-	}
-	if ap, err := filepath.Abs(path); err == nil {
-		return ap
-	}
-	return path
+	o.Sock = utils.AbsPath(o.Sock)
+	o.TLS.AbsPaths()
 }
 
 func (o *Options) Network() string {
@@ -114,6 +107,42 @@ func (o *Options) EOLCode() string {
 	default:
 		return ""
 	}
+}
+
+type TLSOptions struct {
+	CertFile   string `toml:"cert"`
+	KeyFile    string `toml:"key"`
+	CAFile     string `toml:"ca"`
+	ServerName string `toml:"server-name"`
+	Insecure   bool   `toml:"insecure"`
+}
+
+func (o *TLSOptions) Clone() *TLSOptions {
+	newOpts := &TLSOptions{}
+	*newOpts = *o
+	return newOpts
+}
+
+func (o *TLSOptions) Fill(other *TLSOptions) {
+	if o.CertFile == "" {
+		o.CertFile = other.CertFile
+	}
+	if o.KeyFile == "" {
+		o.KeyFile = other.KeyFile
+	}
+	if o.CAFile == "" {
+		o.CAFile = other.CAFile
+	}
+	if o.ServerName == "" {
+		o.ServerName = other.ServerName
+	}
+	o.Insecure = other.Insecure
+}
+
+func (o *TLSOptions) AbsPaths() {
+	o.CertFile = utils.AbsPath(o.CertFile)
+	o.KeyFile = utils.AbsPath(o.KeyFile)
+	o.CAFile = utils.AbsPath(o.CAFile)
 }
 
 type ServerOptions struct {

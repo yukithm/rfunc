@@ -35,6 +35,7 @@ func runServerCmd(cmd *cobra.Command, args []string) error {
 		Config: &server.Config{
 			EOL:       globalOpts.EOLCode(),
 			AllowCmds: globalOpts.Server.AllowCommands(),
+			TLS:       &globalOpts.TLS,
 		},
 		Logger: logger,
 	}

@@ -52,6 +52,13 @@ func initFlags() {
 	pf.StringVarP(&globalOpts.Logfile, "logfile", "l", globalOpts.Logfile, "logfile")
 	pf.BoolVarP(&globalOpts.Quiet, "quiet", "q", globalOpts.Quiet, "suppress outputs (except paste content)")
 	pf.StringVar(&globalOpts.EOL, "eol", globalOpts.EOL, "line ending (LF|CRLF|NATIVE|PASS)")
+
+	// TLS options
+	pf.StringVar(&globalOpts.TLS.CertFile, "tls-cert", globalOpts.TLS.CertFile, "Certificate file")
+	pf.StringVar(&globalOpts.TLS.KeyFile, "tls-key", globalOpts.TLS.KeyFile, "Private key file")
+	pf.StringVar(&globalOpts.TLS.CAFile, "tls-ca", globalOpts.TLS.CAFile, "CA Certificate file")
+	pf.StringVar(&globalOpts.TLS.ServerName, "tls-server-name", globalOpts.TLS.ServerName, "Override TLS server name")
+	pf.BoolVar(&globalOpts.TLS.Insecure, "tls-insecure", globalOpts.TLS.Insecure, "Skip TLS verification")
 }
 
 func Execute() (code int) {

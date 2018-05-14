@@ -37,6 +37,16 @@ func ExpandPath(path string) (string, error) {
 	return epath, nil
 }
 
+func AbsPath(path string) string {
+	if path == "" {
+		return ""
+	}
+	if ap, err := filepath.Abs(path); err == nil {
+		return ap
+	}
+	return path
+}
+
 func FileExists(file string) bool {
 	if _, err := os.Stat(file); err != nil {
 		return false

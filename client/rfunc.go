@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/yukithm/rfunc/options"
 	pb "github.com/yukithm/rfunc/rfuncs"
 	"github.com/yukithm/rfunc/text"
 	"google.golang.org/grpc"
@@ -14,6 +15,7 @@ const RPCTimeout = time.Second * 5
 
 type Config struct {
 	EOL string
+	TLS *options.TLSOptions
 }
 
 type RFunc struct {
@@ -33,7 +35,7 @@ func RunRFunc(network, addr string, config *Config, f func(*RFunc) error) error 
 }
 
 func (f *RFunc) Connect(network, addr string) error {
-	conn, err := NewClientConn(network, addr)
+	conn, err := NewClientConn(network, addr, f.Config.TLS)
 	if err != nil {
 		return err
 	}

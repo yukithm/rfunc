@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/yukithm/rfunc/options"
 	"github.com/yukithm/rfunc/server/clipboard"
 	"github.com/yukithm/rfunc/server/shell"
 )
@@ -14,6 +15,7 @@ import (
 type Config struct {
 	EOL       string
 	AllowCmds []string
+	TLS       *options.TLSOptions
 }
 
 type Server struct {

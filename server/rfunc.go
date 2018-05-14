@@ -2,12 +2,16 @@ package server
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net"
 	"net/url"
 
+	"github.com/yukithm/rfunc/options"
 	pb "github.com/yukithm/rfunc/rfuncs"
 	"github.com/yukithm/rfunc/server/clipboard"
 	"github.com/yukithm/rfunc/server/shell"
@@ -15,6 +19,7 @@ import (
 	"github.com/yukithm/rfunc/utils"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 )
@@ -37,19 +42,32 @@ func (f *RFunc) Log() *log.Logger {
 }
 
 func (f *RFunc) Start() error {
-	f.initServer()
+	if f.grpcServer == nil {
+		server, err := f.newServer()
+		if err != nil {
+			return err
+		}
+		f.grpcServer = server
+	}
 	return f.grpcServer.Serve(f.Listener)
 }
 
-func (f *RFunc) initServer() {
-	if f.grpcServer != nil {
-		return
+func (f *RFunc) newServer() (*grpc.Server, error) {
+	opts := make([]grpc.ServerOption, 0)
+	if f.Config.TLS != nil && (f.Config.TLS.CertFile != "" || f.Config.TLS.CAFile != "") {
+		tlsConfig, err := newTLSConfig(f.Config.TLS)
+		if err != nil {
+			return nil, err
+		}
+		creds := credentials.NewTLS(tlsConfig)
+		opts = append(opts, grpc.Creds(creds))
 	}
 
-	gs := grpc.NewServer()
+	gs := grpc.NewServer(opts...)
 	pb.RegisterRFuncsServer(gs, f)
 	reflection.Register(gs)
-	f.grpcServer = gs
+
+	return gs, nil
 }
 
 func (f *RFunc) Stop() {
@@ -171,4 +189,46 @@ func (f *RFunc) convertLineEnding(str string) string {
 	}
 
 	return text.ConvertLineEnding(str, f.Config.EOL)
+}
+
+func newTLSConfig(opts *options.TLSOptions) (*tls.Config, error) {
+	var certs []tls.Certificate
+	if opts.CertFile != "" {
+		cert, err := tls.LoadX509KeyPair(opts.CertFile, opts.KeyFile)
+		if err != nil {
+			return nil, err
+		}
+		certs = []tls.Certificate{cert}
+	}
+
+	var caCertPool *x509.CertPool
+	if opts.CAFile != "" {
+		caCertPem, err := ioutil.ReadFile(opts.CAFile)
+		if err != nil {
+			return nil, fmt.Errorf("Unable to read CA cert: %s", err)
+		}
+		caCertPool = x509.NewCertPool()
+		if ok := caCertPool.AppendCertsFromPEM(caCertPem); !ok {
+			return nil, errors.New("Failed to append CA cert to the pool")
+		}
+	}
+
+	tlsConfig := &tls.Config{
+		Certificates:     certs,
+		ClientAuth:       tls.RequireAndVerifyClientCert,
+		ClientCAs:        caCertPool,
+		CurvePreferences: []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
+		CipherSuites: []uint16{
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+		},
+		PreferServerCipherSuites: true,
+		MinVersion:               tls.VersionTLS12,
+	}
+	tlsConfig.BuildNameToCertificate()
+
+	return tlsConfig, nil
 }

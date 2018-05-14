@@ -57,6 +57,8 @@ func initFlags() {
 	pf.StringVar(&globalOpts.TLS.CertFile, "tls-cert", globalOpts.TLS.CertFile, "Certificate file")
 	pf.StringVar(&globalOpts.TLS.KeyFile, "tls-key", globalOpts.TLS.KeyFile, "Private key file")
 	pf.StringVar(&globalOpts.TLS.CAFile, "tls-ca", globalOpts.TLS.CAFile, "CA Certificate file")
+	pf.StringVar(&globalOpts.TLS.ServerName, "tls-server-name", globalOpts.TLS.ServerName, "Override TLS server name")
+	pf.BoolVar(&globalOpts.TLS.Insecure, "tls-insecure", globalOpts.TLS.Insecure, "Skip TLS verification")
 }
 
 func Execute() (code int) {

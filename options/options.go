@@ -110,9 +110,11 @@ func (o *Options) EOLCode() string {
 }
 
 type TLSOptions struct {
-	CertFile string `toml:"cert"`
-	KeyFile  string `toml:"key"`
-	CAFile   string `toml:"ca"`
+	CertFile   string `toml:"cert"`
+	KeyFile    string `toml:"key"`
+	CAFile     string `toml:"ca"`
+	ServerName string `toml:"server-name"`
+	Insecure   bool   `toml:"insecure"`
 }
 
 func (o *TLSOptions) Clone() *TLSOptions {
@@ -131,6 +133,10 @@ func (o *TLSOptions) Fill(other *TLSOptions) {
 	if o.CAFile == "" {
 		o.CAFile = other.CAFile
 	}
+	if o.ServerName == "" {
+		o.ServerName = other.ServerName
+	}
+	o.Insecure = other.Insecure
 }
 
 func (o *TLSOptions) AbsPaths() {

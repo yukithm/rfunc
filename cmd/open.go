@@ -14,6 +14,7 @@ var openCmd = &cobra.Command{
 func runOpenCmd(cmd *cobra.Command, args []string) error {
 	config := &client.Config{
 		EOL: globalOpts.EOLCode(),
+		TLS: &globalOpts.TLS,
 	}
 	return client.RunRFunc(globalOpts.Network(), globalOpts.Address(), config, func(rfunc *client.RFunc) error {
 		return rfunc.OpenURL(args...)

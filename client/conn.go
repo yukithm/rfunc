@@ -49,7 +49,13 @@ func newTLSConfig(opts *options.TLSOptions) (*tls.Config, error) {
 	}
 
 	var caCertPool *x509.CertPool
-	if opts.CAFile != "" {
+	if opts.CAFile == "" {
+		var err error
+		caCertPool, err = x509.SystemCertPool()
+		if err != nil {
+			return nil, err
+		}
+	} else {
 		caCertPem, err := ioutil.ReadFile(opts.CAFile)
 		if err != nil {
 			return nil, fmt.Errorf("Unable to read CA cert: %s", err)

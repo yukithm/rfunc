@@ -2,6 +2,21 @@
 
 rfunc is utility functions over the network. rfunc currently provides clipboard copy and paste functions and open URLs functions.
 
+<!-- TOC depthFrom:2 -->
+
+- [Motivation](#motivation)
+- [Features](#features)
+- [Install](#install)
+- [Usage](#usage)
+- [Command name symlinks (busybox style)](#command-name-symlinks-busybox-style)
+- [Configurations](#configurations)
+- [Security](#security)
+- [Similar projects](#similar-projects)
+- [Author](#author)
+- [License](#license)
+
+<!-- /TOC -->
+
 ## Motivation
 
 I spend most of my work time in a remote shell with tmux and vim. Sometimes, I feel like copying texts from remote shell to local desktop clipboard and opening URLs by local desktop browser. But text selecting on the terminal client is a bit hard when I split tmux panes. Therefore I want to use clipboard commands such as pbcopy/pbpaste, xclip, xsel and open commands such as xdg-open across the network.
@@ -11,8 +26,9 @@ I spend most of my work time in a remote shell with tmux and vim. Sometimes, I f
 * Cross platform (Linux, macOS and Windows)
 * Clipboard copy and paste
 * Open URLs
+* Support TLS and client certificate
 
-**rfunc does NOT support encryption. It is strongly recommended that you use port forwarding with ssh.**
+**It is strongly recommended that you use port forwarding with ssh and use server/client certificate for security reason. (See: [Security](#security))**
 
 ## Install
 
@@ -94,10 +110,41 @@ logfile = "/path/to/logfile"
 quiet = false
 eol = "NATIVE"
 
+[tls]
+cert = "/path/to/cert.pem"
+key = "/path/to/private.key"
+ca = "/path/to/cacert.pem"
+server-name = "override-server-name"
+insecure = false
+
 [server]
 daemon = false
 allow-commands = ["copy", "paste"]
 ```
+
+## Security
+
+You should use client and server certificate to protect rfunc server from other people that can access TCP ports on your PC.
+If you don't use client certificate, your rfunc server accepts all access from anyone.
+
+
+Run server with `--tls-***` options:
+
+```sh
+rfunc server --tls-cert=server.crt --tls-key=server.key --tls-ca=cacert-for-client.pem
+```
+
+`--tls-ca` specifies CA root for client's certificate.
+
+Run client with `--tls-***` options:
+
+```sh
+rfunc paste --tls-cert=client.crt --tls-key=client.key --tls-ca=cacert-for-server.pem
+```
+
+`--tls-ca` specifies CA root for server's certificate.
+
+You can set these values to configuration file.
 
 ## Similar projects
 

@@ -8,7 +8,7 @@ I spend most of my work time in a remote shell with tmux and vim. Sometimes, I f
 
 ## Features
 
-* Cross platform (currently only support Linux and macOS)
+* Cross platform (Linux, macOS and Windows)
 * Clipboard copy and paste
 * Open URLs
 

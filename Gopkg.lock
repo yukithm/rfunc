@@ -8,6 +8,12 @@
   revision = "3d9f6e0b234fe7d17448b345b2e14ac05814a758"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/atotto/clipboard"
+  packages = ["."]
+  revision = "5e2c7bddca04488284428a201e4a15615f7a5074"
+
+[[projects]]
   name = "github.com/golang/protobuf"
   packages = [
     "proto",
@@ -121,6 +127,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "1524bdde9ad3849504b4e7f572a3a840745d8a196e799df1e14cd459417576f2"
+  inputs-digest = "5705f0e39d306bd3b9afd369aa8ba414cf8e42edd58d16b593f8a7fed5dab7ae"
   solver-name = "gps-cdcl"
   solver-version = 1

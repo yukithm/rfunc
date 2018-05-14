@@ -2,9 +2,12 @@
 
 package shell
 
-// TODO: implements using ShellExecute API
-//       or call "rundll32.exe url.dll,FileProtocolHandler URL"
+var DefaultShell = []CmdShell{
+	{
+		openCmd: OpenCmd{path: "rundll32.exe", args: []string{"url.dll,FileProtocolHandler"}},
+	},
+}
 
 func GetShell() (Shell, error) {
-	return nil, ErrUnsupported
+	return findShell(DefaultShell)
 }

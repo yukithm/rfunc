@@ -136,7 +136,9 @@ func (o *TLSOptions) Fill(other *TLSOptions) {
 	if o.ServerName == "" {
 		o.ServerName = other.ServerName
 	}
-	o.Insecure = other.Insecure
+	if o.Insecure == false {
+		o.Insecure = other.Insecure
+	}
 }
 
 func (o *TLSOptions) AbsPaths() {

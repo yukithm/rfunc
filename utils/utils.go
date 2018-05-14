@@ -23,6 +23,10 @@ func NopWriteCloser(w io.Writer) io.WriteCloser {
 func ExpandPath(path string) (string, error) {
 	// ~user form is not supported because of user.Lookup() requires cgo.
 
+	if path == "" {
+		return "", nil
+	}
+
 	if strings.HasPrefix(path, "~/") {
 		u, err := user.Current()
 		if err != nil {

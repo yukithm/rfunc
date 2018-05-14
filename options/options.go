@@ -53,9 +53,9 @@ func (o *Options) Fill(other *Options) {
 
 func (o *Options) AbsPaths() {
 	if o.Logfile != "" && o.Logfile != "-" {
-		o.Logfile = utils.AbsPath(o.Logfile)
+		o.Logfile, _ = utils.ExpandPath(o.Logfile)
 	}
-	o.Sock = utils.AbsPath(o.Sock)
+	o.Sock, _ = utils.ExpandPath(o.Sock)
 	o.TLS.AbsPaths()
 }
 
@@ -140,9 +140,9 @@ func (o *TLSOptions) Fill(other *TLSOptions) {
 }
 
 func (o *TLSOptions) AbsPaths() {
-	o.CertFile = utils.AbsPath(o.CertFile)
-	o.KeyFile = utils.AbsPath(o.KeyFile)
-	o.CAFile = utils.AbsPath(o.CAFile)
+	o.CertFile, _ = utils.ExpandPath(o.CertFile)
+	o.KeyFile, _ = utils.ExpandPath(o.KeyFile)
+	o.CAFile, _ = utils.ExpandPath(o.CAFile)
 }
 
 type ServerOptions struct {

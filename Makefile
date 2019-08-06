@@ -1,49 +1,57 @@
-GOPATH := $(shell go env GOPATH)
-GO_FLAGS := -ldflags="-s -w"
-REPO := github.com/yukithm/rfunc
+PREFIX = /usr/local
+BINDIR = $(PREFIX)/bin
 
-PREFIX := /usr/local
-BINDIR := $(PREFIX)/bin
+GO_FLAGS = -ldflags="-s -w"
 
-DEVTOOL_DIR = $(CURDIR)/devtool
-GOX = $(DEVTOOL_DIR)/bin/gox
+DEVTOOLS_DIR = $(CURDIR)/devtools
+DEVTOOLS_BIN = $(DEVTOOLS_DIR)/bin
+
+GOX = $(DEVTOOLS_BIN)/gox
 OSARCH = linux/amd64 linux/arm darwin/amd64 windows/386 windows/amd64
-DISTDIR := releases
 DIST_FORMAT = $(DISTDIR)/{{.Dir}}-{{.OS}}-{{.Arch}}
+DISTDIR = releases
 
-.PHONY: build rfunc install clean proto mock test dist dist-clean
-
+.PHONY: build
 build: rfunc
 
 rfunc: *.go */*.go
 	go build $(GO_FLAGS)
 
+.PHONY: install
 install: build
 	install -d $(BINDIR)
 	install rfunc $(BINDIR)
 
+.PHONY: clean
 clean:
 	rm -f rfunc
 
-proto:
-	go get github.com/golang/protobuf/protoc-gen-go
-	protoc -I rfuncs/ rfuncs/rfuncs.proto --go_out=plugins=grpc:rfuncs
-
-mock:
-	go get github.com/golang/mock/gomock
-	go get github.com/golang/mock/mockgen
-	install -d mock_rfuncs
-	mockgen $(REPO)/rfuncs RFuncsClient > mock_rfuncs/rfuncs_mock.go
-
+.PHONY: test
 test:
 	go test -v ./... -cover
 
-dist: $(DEVTOOL_DIR)/bin/gox
+.PHONY: dist
+dist: $(GOX)
 	$(GOX) -osarch="$(OSARCH)" $(GO_FLAGS) -output="$(DIST_FORMAT)" .
 
-$(DEVTOOL_DIR)/bin/gox:
-	mkdir -p $(DEVTOOL_DIR)/{bin,pkg,src}
-	GOPATH=$(DEVTOOL_DIR) go get github.com/mitchellh/gox
-
+.PHONY: dist-clean
 dist-clean:
-	rm -rf rfunc $(DISTDIR) $(DEVTOOL_DIR)
+	rm -rf rfunc rfunc.exe $(DISTDIR) $(DEVTOOLS_BIN)
+
+.PHONY: proto
+proto:
+	PATH=$(DEVTOOLS_BIN):$(PATH) protoc -I rfuncs/ rfuncs/rfuncs.proto --go_out=plugins=grpc:rfuncs
+
+.PHONY: mock
+mock: proto
+	install -d mock_rfuncs
+	$(DEVTOOLS_BIN)/mockgen -source=rfuncs/rfuncs.pb.go RFuncsClient > mock_rfuncs/rfuncs_mock.go
+
+.PHONY: init-devenv
+init-devenv: devtools
+
+$(GOX): devtools
+
+.PHONY: devtools
+devtools:
+	go generate $(DEVTOOLS_DIR)/devtools.go

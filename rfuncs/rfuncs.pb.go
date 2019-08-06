@@ -125,9 +125,7 @@ func (m *ClipboardContent) String() string            { return proto.CompactText
 func (*ClipboardContent) ProtoMessage()               {}
 func (*ClipboardContent) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
 
-type isClipboardContent_Content interface {
-	isClipboardContent_Content()
-}
+type isClipboardContent_Content interface{ isClipboardContent_Content() }
 
 type ClipboardContent_Text struct {
 	Text string `protobuf:"bytes,2,opt,name=text,oneof"`

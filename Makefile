@@ -60,7 +60,7 @@ lint:
 	golint -set_exit_status ./...
 
 .PHONY: proto
-proto:
+proto: devtools
 	PATH=$(DEVTOOLS_BIN):$(PATH) protoc -I rfuncs/ rfuncs/rfuncs.proto --go_out=plugins=grpc:rfuncs
 
 .PHONY: mock

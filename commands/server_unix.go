@@ -1,6 +1,6 @@
 // +build linux freebsd darwin
 
-package cmd
+package commands
 
 import "github.com/VividCortex/godaemon"
 

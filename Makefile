@@ -3,7 +3,7 @@ PREFIX := /usr/local
 BINDIR := $(PREFIX)/bin
 
 VERSION := $(shell git describe --tags --always --dirty=-dev)
-LDFLAGS := -s -w -X 'github.com/yukithm/rfunc/cmd.version=$(VERSION)'
+LDFLAGS := -s -w -X 'github.com/yukithm/rfunc/commands.version=$(VERSION)'
 
 DEVTOOLS_DIR := $(CURDIR)/devtools
 DEVTOOLS_BIN := $(DEVTOOLS_DIR)/bin

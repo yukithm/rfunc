@@ -3,11 +3,11 @@ package main
 import (
 	"os"
 
-	"github.com/yukithm/rfunc/cmd"
+	"github.com/yukithm/rfunc/commands"
 )
 
 func main() {
-	code := cmd.Execute()
+	code := commands.Execute()
 	if code != 0 {
 		os.Exit(code)
 	}

@@ -1,6 +1,6 @@
 // +build netbsd openbsd dragonfly solaris
 
-package cmd
+package commands
 
 import "errors"
 

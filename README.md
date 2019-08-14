@@ -11,6 +11,10 @@ rfunc is utility functions over the network. rfunc currently provides clipboard 
 - [Command name symlinks (busybox style)](#command-name-symlinks-busybox-style)
 - [Configurations](#configurations)
 - [Security](#security)
+- [Development](#development)
+    - [Prerequisites](#prerequisites)
+    - [Development tools](#development-tools)
+    - [Generate *.pb.go from *.proto files](#generate-pbgo-from-proto-files)
 - [Similar projects](#similar-projects)
 - [Author](#author)
 - [License](#license)
@@ -35,7 +39,7 @@ I spend most of my work time in a remote shell with tmux and vim. Sometimes, I f
 Use `go get` or just download [binary releases](https://github.com/yukithm/rfunc/releases).
 
 ```
-go get github.com/yukithm/rfunc
+go get -u github.com/yukithm/rfunc
 ```
 
 ## Usage
@@ -145,6 +149,36 @@ rfunc paste --tls-cert=client.crt --tls-key=client.key --tls-ca=cacert-for-serve
 `--tls-ca` specifies CA root for server's certificate.
 
 You can set these values to configuration file.
+
+## Development
+
+### Prerequisites
+
+- protoc (Protocol compiler for Protocol Buffers)  
+  https://github.com/protocolbuffers/protobuf
+
+On macOS, you can install it by Homebrew:
+
+```sh
+brew install protobuf
+```
+
+Other platforms, you can download pre-build binaries from the above URL.
+
+### Development tools
+
+```sh
+make deps
+```
+
+### Generate *.pb.go from *.proto files
+
+You need to regenerate `*.pb.go` and mocks when you edit *.proto files.
+
+```sh
+make proto
+make mock
+```
 
 ## Similar projects
 

@@ -11,12 +11,14 @@ DISTDIR := releases
 OSARCH := linux/amd64 linux/arm darwin/amd64 windows/386 windows/amd64
 DIST_FORMAT := $(DISTDIR)/{{.Dir}}-{{.OS}}-{{.Arch}}
 
+SOURCES := $(shell find . -type f -name "*.go")
+
 export GO111MODULE=on
 
 .PHONY: build
-build: bin/rfunc
+build: rfunc
 
-bin/rfunc: *.go */*.go
+rfunc: $(SOURCES)
 	go build -ldflags "$(LDFLAGS)"
 
 .PHONY: install

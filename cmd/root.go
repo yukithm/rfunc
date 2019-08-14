@@ -14,6 +14,9 @@ import (
 	"github.com/yukithm/rfunc/utils"
 )
 
+// injected by build process
+var version = "unknown"
+
 var defaultOpts = &options.Options{
 	Addr: "127.0.0.1:8299",
 	EOL:  "NATIVE",
@@ -23,14 +26,7 @@ var globalOpts = &options.Options{}
 var logger *log.Logger
 var logdev io.WriteCloser
 
-var rootCmd = &cobra.Command{
-	Use:               "rfunc",
-	Short:             "rfunc is utility functions over the network",
-	Version:           Version,
-	SilenceErrors:     false,
-	SilenceUsage:      true,
-	PersistentPreRunE: initApp,
-}
+var rootCmd = createRootCmd()
 
 func init() {
 	cobra.EnableCommandSorting = false
@@ -39,6 +35,17 @@ func init() {
 	rootCmd.AddCommand(pasteCmd)
 	rootCmd.AddCommand(openCmd)
 	rootCmd.AddCommand(serverCmd)
+}
+
+func createRootCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:               "rfunc",
+		Short:             "rfunc is utility functions over the network",
+		Version:           version,
+		SilenceErrors:     false,
+		SilenceUsage:      true,
+		PersistentPreRunE: initApp,
+	}
 }
 
 func initFlags() {

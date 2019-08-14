@@ -1,8 +1,9 @@
+NAME := rfunc
 PREFIX := /usr/local
 BINDIR := $(PREFIX)/bin
 
-REVISION := $(shell git rev-parse --short HEAD)
-LDFLAGS := -s -w -X main.revision=$(REVISION)
+VERSION := $(shell git describe --tags --always --dirty=-dev)
+LDFLAGS := -s -w -X 'github.com/yukithm/rfunc/cmd.version=$(VERSION)'
 
 DEVTOOLS_DIR := $(CURDIR)/devtools
 DEVTOOLS_BIN := $(DEVTOOLS_DIR)/bin
@@ -16,15 +17,15 @@ SOURCES := $(shell find . -type f -name "*.go")
 export GO111MODULE=on
 
 .PHONY: build
-build: rfunc
+build: $(NAME)
 
-rfunc: $(SOURCES)
+$(NAME): $(SOURCES)
 	go build -ldflags "$(LDFLAGS)"
 
 .PHONY: install
 install: build
 	install -d $(BINDIR)
-	install rfunc $(BINDIR)
+	install $(NAME) $(BINDIR)
 
 .PHONY: dist
 dist: devtools
@@ -32,11 +33,11 @@ dist: devtools
 
 .PHONY: dist-clean
 dist-clean:
-	rm -rf rfunc rfunc.exe "$(DISTDIR)" "$(DEVTOOLS_BIN)"
+	rm -rf $(NAME) $(NAME).exe "$(DISTDIR)" "$(DEVTOOLS_BIN)"
 
 .PHONY: clean
 clean:
-	rm -f rfunc rfunc.exe
+	rm -f $(NAME) $(NAME).exe
 
 .PHONY: test
 test:
